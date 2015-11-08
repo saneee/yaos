@@ -1,14 +1,6 @@
-typedef unsigned int   uint;
-typedef unsigned short ushort;
-typedef unsigned char  uchar;
+#ifndef __TYPES_H_
+#define __TYPES_H_ 1
+#include <yaos/types.h>
 
-typedef unsigned int  uint32;
-typedef unsigned long uint64;
-
-#if X64
-typedef unsigned long uintp;
-#else
-typedef unsigned int  uintp;
 #endif
 
-typedef uintp pde_t;
