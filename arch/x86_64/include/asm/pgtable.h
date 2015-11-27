@@ -10,6 +10,9 @@ static inline ulong V2P(ulong addr){
 static inline ulong IO2V(ulong addr){
     return addr+IO_MEM_BASE;
 }
+extern void *ioremap_nocache(ulong addr,ulong size);
+extern int map_page_p2v(ulong p,ulong v,ulong uflag);
+extern u64 get_pte_with_addr(ulong addr);
 /*2M hug page */
 #define PAGE_SIZE 0x200000
 // Page table/directory entry flags.
@@ -23,6 +26,10 @@ static inline ulong IO2V(ulong addr){
 #define PTE_PS          0x080   // Page Size
 #define PTE_MBZ         0x180   // Bits must be zero
 
+static inline int map_page_p2v_rw(ulong paddr, ulong vaddr)
+{
+    return map_page_p2v(paddr,vaddr,PTE_P|PTE_W|PTE_PS);
+}
 
 
 /*
@@ -49,5 +56,4 @@ static inline ulong IO2V(ulong addr){
  * entries per page directory level
  */
 #define PTRS_PER_PTE    512
-extern int map_page_p2v(ulong p,ulong v,ulong uflag);
 #endif

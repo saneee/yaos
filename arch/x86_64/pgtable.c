@@ -5,7 +5,8 @@
 #include <yaos/errno.h>
 #include <asm/cpu.h>
 #include <yaos/kheap.h>
-#include "pm64.h"
+#include <asm/pm64.h>
+#include <yaos/init.h>
 #if 1
 #define DEBUG_PRINT printk
 #else
@@ -22,6 +23,7 @@ struct pd_t {
 
     u64 pde[PD_PER_PTE];
 };
+ulong bp_cr3;
 static struct pml4_t pml4 __attribute__ ((aligned(4096)));;
 static struct pdp_t first_pdp __attribute__ ((aligned(4096)));
 static struct pd_t first_pd __attribute__ ((aligned(4096)));
@@ -70,6 +72,7 @@ static void init_pml4()
         }
     }
     write_cr3((ulong) & pml4);
+    bp_cr3=read_cr3();
 }
 
 u64 get_pte_with_addr(u64 addr)
@@ -137,7 +140,17 @@ int map_page_p2v(ulong paddr, ulong vaddr, ulong flag)
 //    DEBUG_PRINT("map phy:%lx to vaddr:%lx,pte:%lx,%d,%d,%d\n",paddr,vaddr,&pd[k],i,j,k);
     return OK;
 }
-
+void *ioremap_nocache(ulong addr,ulong size)
+{
+    ulong paddr=addr&~(PAGE_SIZE-1);
+    size+=addr-paddr;
+    for(ulong added=0;added<=size;added+=PAGE_SIZE){
+ map_page_p2v(paddr, paddr + IO_MEM_BASE,
+                             PTE_P | PTE_W | PTE_PWT | PTE_PCD | PTE_PS);
+        paddr+=PAGE_SIZE;
+    }
+    return (void *)(addr+IO_MEM_BASE);
+}
 void init_pgtable()
 {
     init_pml4();

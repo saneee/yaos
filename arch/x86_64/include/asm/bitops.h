@@ -347,7 +347,6 @@ static inline unsigned long __fls(unsigned long word)
 	    : "rm" (word));
 	return word;
 }
-
 #undef ADDR
 
 /**

@@ -6,10 +6,6 @@
 #include <assert.h>
 
 #define stat yaos_stat  // avoid clash with host struct stat
-#include "../include/types.h"
-#include "../include/fs.h"
-#include "../include/stat.h"
-#include "../include/param.h"
 
 #if __GNUC__ < 5 || !defined __USE_ISOC11
 #define static_assert(a, b) do { switch (0) case 0: case (a): ; } while (0)

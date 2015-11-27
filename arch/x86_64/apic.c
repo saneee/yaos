@@ -7,15 +7,202 @@
 #include <asm/cpu.h>
 #include <asm/apic.h>
 #define CMOS_PORT 0x70
+static unsigned APIC_SHORTHAND_SELF = 0x40000;
+//static unsigned APIC_SHORTHAND_ALL = 0x80000;
+static unsigned APIC_SHORTHAND_ALLBUTSELF = 0xC0000;
+static unsigned APIC_ICR_TYPE_FIXED = 0x00000;
+static unsigned APIC_ICR_LEVEL_ASSERT = 1 << 14;
+static unsigned APIC_BASE_GLOBAL_ENABLE = 1 << 11;
+static unsigned ICR2_DESTINATION_SHIFT=24;
 bool is_xapic = true;
 bool is_x2apic = false;
 u32 *lapic_base;                //set by acpi.c
+struct apic_method *p_apic_func;
+struct apic_method x2apic_method;
+struct apic_method xapic_method;
+u64 _apic_base;
+static void lapic_software_enable()
+{
+    lapic_write(APIC_LVT0, 0);
+    lapic_write(APIC_SPIV, APIC_SPIV_APIC_ENABLED | SPURIOUS_APIC_VECTOR);
+    
+}
+static u32 x2apic_read(unsigned reg)
+{
+    return rdmsr(0x800 + reg / 0x10);
+}
+
+static void x2apic_write(unsigned reg, u32 value)
+{
+    wrmsr(0x800 + reg / 0x10, value);
+}
+
+static u32 x2apic_id()
+{
+    u32 id= x2apic_read((unsigned)(APIC_ID));
+    printk("x2apic_id:%x\n",id);
+    return id;
+}
+
+static void x2apic_enable()
+{
+    u64 msr;
+
+    msr = rdmsr(MSR_IA32_APICBASE);
+    if (msr & X2APIC_ENABLE)
+        return;
+
+    wrmsr(MSR_IA32_APICBASE, msr | X2APIC_ENABLE);
+    lapic_software_enable();
+}
+/*
+static void x2apic_disable()
+{
+    u64 msr = rdmsr(MSR_IA32_APICBASE);
+
+    if (!(msr & X2APIC_ENABLE))
+        return;
+    wrmsr(MSR_IA32_APICBASE, msr & ~(X2APIC_ENABLE | XAPIC_ENABLE));
+    wrmsr(MSR_IA32_APICBASE, msr & ~(X2APIC_ENABLE));
+
+}
+*/
+static void x2apic_self_ipi(unsigned vector)
+{
+    wrmsr(X2APIC_SELF_IPI, vector);
+
+}
+
+static void x2apic_ipi(unsigned apic_id, unsigned vector)
+{
+    wrmsr(X2APIC_ICR, vector | ((u64) (apic_id) << 32) | APIC_ICR_LEVEL_ASSERT);
+}
+
+static void x2apic_init_ipi(unsigned apic_id, unsigned vector)
+{
+    wrmsr_safe(X2APIC_ICR, vector | ((u64) (apic_id) << 32));
+}
+
+static void x2apic_ipi_allbutself(unsigned vector)
+{
+    wrmsr(X2APIC_ICR,
+          vector | APIC_SHORTHAND_ALLBUTSELF | APIC_ICR_LEVEL_ASSERT);
+}
+
+static void x2apic_nmi_allbutself()
+{
+    wrmsr(X2APIC_ICR, APIC_SHORTHAND_ALLBUTSELF |
+          lapic_delivery(NMI_DELIVERY) | APIC_ICR_LEVEL_ASSERT);
+}
+
+static void x2apic_eoi()
+{
+    wrmsr(X2APIC_EOI, 0);
+
+}
+struct apic_method x2apic_method = {
+    x2apic_read,
+    x2apic_write,
+    x2apic_id,
+    x2apic_enable,
+    x2apic_self_ipi,
+    x2apic_ipi,
+    x2apic_init_ipi,
+    x2apic_ipi_allbutself,
+    x2apic_nmi_allbutself,
+    x2apic_eoi
+};
+
+static u32 xapic_read(unsigned reg)
+{
+    return lapic_base[reg / 4];
+}
+
+static void xapic_write(unsigned reg, u32 value)
+{
+    lapic_base[reg / 4] = value;
+}
+
+static u32 xapic_id()
+{
+    return xapic_read((unsigned)(APIC_ID));
+}
+static void xapic_enable()
+{
+    
+    wrmsr(IA32_APIC_BASE, _apic_base | APIC_BASE_GLOBAL_ENABLE);
+    lapic_software_enable();
+
+}
+static void xapic_nmi_allbutself()
+{
+    xapic_write(APIC_ICR, APIC_ICR_TYPE_FIXED | APIC_SHORTHAND_ALLBUTSELF |
+                               lapic_delivery(NMI_DELIVERY));
+
+}
+static void xapic_ipi_allbutself(unsigned vector)
+{
+    xapic_write(APIC_ICR, APIC_ICR_TYPE_FIXED | APIC_SHORTHAND_ALLBUTSELF |
+                               vector | APIC_ICR_LEVEL_ASSERT);
+}
+
+static void xapic_ipi(unsigned apic_id, unsigned vector)
+{
+    xapic_write(APIC_ICR2, apic_id << ICR2_DESTINATION_SHIFT);
+    xapic_write(APIC_ICR, vector | APIC_ICR_LEVEL_ASSERT);
+}
+
+static void xapic_eoi()
+{
+    xapic_write(APIC_EOI, 0);
+}
+static void xapic_self_ipi(unsigned vector)
+{
+    xapic_ipi(APIC_ICR_TYPE_FIXED | APIC_SHORTHAND_SELF, vector); 
+}
+static void xapic_init_ipi(unsigned apic_id,unsigned vector)
+{
+    xapic_ipi(apic_id,vector);
+}
+struct apic_method xapic_method = {
+    xapic_read,
+    xapic_write,
+    xapic_id,
+    xapic_enable,
+    xapic_self_ipi,
+    xapic_ipi,
+    xapic_init_ipi,
+    xapic_ipi_allbutself,
+    xapic_nmi_allbutself,
+    xapic_eoi
+};
+struct msi_message apic_compose_msix(u8 vector, u8 dest_id)
+{
+    struct msi_message msg={0,0};
+
+    if (vector <= 15) {
+        return msg;
+    }
+
+    msg.addr =
+        ( _apic_base & 0xFFF00000 ) |
+        ( dest_id << 12 );
+
+    msg.data =
+        ( FIXED_DELIVERY << MSI_DELIVERY_MODE ) |
+        ( MSI_ASSSERT << MSI_LEVEL_ASSERTION ) |
+        ( TRIGGER_MODE_EDGE << MSI_TRIGGER_MODE ) |
+        vector;
+
+    return msg;
+}
 void probe_apic()
 {
     u32 eax = 1;
     u32 ecx = 0;
     u32 ebx, edx;
-
+    _apic_base=lapic_read_base();
+printk("_apic_base:%lx\n\n",_apic_base);
     native_cpuid(&eax, &ebx, &ecx, &edx);
     if (test_bit(9, (ulong *) & edx)) {
         is_xapic = true;
@@ -24,50 +211,81 @@ void probe_apic()
     if (test_bit(21, (ulong *) & ecx)) {
         is_x2apic = true;
         printk("x2APIC ok\n");
+        p_apic_func=&x2apic_method;
+    }
+    else{
+        p_apic_func=&xapic_method;
     }
     eax = 0;
     native_cpuid(&eax, &ebx, &ecx, &edx);
-    printk("Obf:%lx,%lx,%lx,%lx\n", eax, ebx, ecx, edx);
+    printk("Of:%lx,%lx,%lx,%lx\n", eax, ebx, ecx, edx);
+    eax = 7;
+    native_cpuid(&eax, &ebx, &ecx, &edx);
+    write_cr4(read_cr4()|cr4_fsgsbase);
+    printk("O7:%lx,%lx,%lx,%lx,cr4:%lx\n", eax, ebx, ecx, edx,read_cr4());
+    
     eax = 0x0b;
+    ecx=0;
     native_cpuid(&eax, &ebx, &ecx, &edx);
     printk("Obf:%lx,%lx,%lx,%lx\n", eax, ebx, ecx, edx);
-
 }
 
-static void microdelay(ulong m)
-{
-}
 
 void lapic_start_ap(uint apicid, uint addr)
 {
-    ushort *wrv;
+ //   ushort *wrv;
 
     // "The BSP must initialize CMOS shutdown code to 0AH
     // and the warm reset vector (DWORD based at 40:67) to point at
     // the AP startup code prior to the [universal startup algorithm]."
+/*
     outb(0xF, CMOS_PORT);       // offset 0xF is shutdown code
     outb(0x0A, CMOS_PORT + 1);
     wrv = (ushort *) P2V((0x40 << 4 | 0x67));	// Warm reset vector
+    printk("___0____");
+
     wrv[0] = 0;
     wrv[1] = addr >> 4;
-    x2apic_enable();
+    printk("____1____");
+    u32 msr = rdmsr(MSR_IA32_APICBASE);
+
+    printk("msr:%x,%x\n", msr, msr | X2APIC_ENABLE);
+//is_x2apic=false;
     // "Universal startup algorithm."
     // Send INIT (level-triggered) interrupt to reset other CPU.
+*/
+    lapic_init_ipi(apicid,0x4500);
+    lapic_init_ipi(apicid,0x4600|(addr>>12));
+    lapic_init_ipi(apicid,0x4600|(addr>>12));
+
+
+/*
     lapic_write(APIC_ICR2, apicid << 24);
     lapic_write(APIC_ICR, APIC_DM_INIT | APIC_INT_LEVELTRIG | APIC_INT_ASSERT);
     microdelay(200);
+    printk("____3____");
+
     lapic_write(APIC_ICR, APIC_DM_INIT | APIC_INT_LEVELTRIG);
+    printk("____4____");
+
     microdelay(10000);
- for(int i = 0; i < 2; i++){
-    lapic_write(APIC_ICR2, apicid<<24);
-    lapic_write(APIC_ICR, APIC_DM_STARTUP | (addr>>12));
-    microdelay(200);
-  }
-
+    for (int i = 0; i < 2; i++) {
+        lapic_write(APIC_ICR2, apicid << 24);
+        lapic_write(APIC_ICR, APIC_DM_STARTUP | (addr >> 12));
+        microdelay(200);
+    }
+*/
 }
-
 void init_lapic(void)
 {
+    probe_apic();
+    lapic_enable();
+printk("\n\napicid:%lx,%lx\n",lapic_id(),cpuid_apic_id());
+}
+void init_lapic2(void)
+{
+    probe_apic();
+    lapic_enable();
     // Enable local APIC; set spurious interrupt vector.
     lapic_write(APIC_SPIV, APIC_SPIV_APIC_ENABLED | SPURIOUS_APIC_VECTOR);
     // The timer repeatedly counts down at bus frequency
@@ -88,7 +306,8 @@ void init_lapic(void)
         lapic_write(APIC_LVTPC, APIC_LVT_MASKED);
     }
 
-    // Map error interrupt to IRQ_ERROR.
+    // Map error interrpic_write(APIC_SPIV, APIC_SPIV_APIC_ENABLED | SPURIOUS_APIC_VECTOR);
+    lapic_write(APIC_SPIV, APIC_SPIV_APIC_ENABLED | SPURIOUS_APIC_VECTOR);
     lapic_write(APIC_LVTERR, ERROR_APIC_VECTOR);
 
     // Clear error status register (requires back-to-back writes).
@@ -106,3 +325,4 @@ void init_lapic(void)
 
     lapic_write(APIC_TASKPRI, 0);
 }
+

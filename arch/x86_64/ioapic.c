@@ -1,8 +1,7 @@
-#include cpu.h"
-#include "irq.h"
-#include "yaos.h"
-#include "mmu.h"
+#include <asm/cpu.h>
 #include <yaos/printk.h>
+#include <asm/irq.h>
+#include <asm/pgtable.h>
 #define IOAPIC  0xFEC00000      // Default physical address of IO APIC
 
 #define REG_ID     0x00         // Register index: ID
@@ -18,16 +17,18 @@
 #define INT_LEVEL      0x00008000	// Level-triggered (vs edge-)
 #define INT_ACTIVELOW  0x00002000	// Active low (vs high)
 #define INT_LOGICAL    0x00000800	// Destination is CPU id (vs APIC ID)
-volatile struct ioapic *ioapic;
 
 // IO APIC MMIO structure: write reg, then read or write data.
-struct ioapic {
+struct ioapic_t {
     uint reg;
     uint pad[3];
     uint data;
 };
 
-static uint ioapic_read(int reg)
+volatile struct ioapic_t *ioapic;
+extern uchar ioapicid;//acip.c
+
+uint ioapic_read(int reg)
 {
     ioapic->reg = reg;
     return ioapic->data;
@@ -39,15 +40,16 @@ static void ioapic_write(int reg, uint data)
     ioapic->data = data;
 }
 
-void ioapic_init(void)
+void init_ioapic(void)
 {
     int i, id, maxintr;
+    
+    outb(0xff,0x21);//mask 8259 irq
+    outb(0xff,0xa1);//mask 8259 slave irq,use ioapic 
 
-    if (!g_yaos.ismp)
-        return;
-
-    ioapic = (volatile struct ioapic *)PH2V_ADDR(IOAPIC);
+    ioapic = (volatile struct ioapic_t *)IO2V(IOAPIC);
     maxintr = (ioapic_read(REG_VER) >> 16) & 0xFF;
+printk("maxintr:%d\n",maxintr);
     id = ioapic_read(REG_ID) >> 24;
     if (id != ioapicid)
         printk("ioapicinit: id isn't equal to ioapicid; not a MP\n");
@@ -62,8 +64,6 @@ void ioapic_init(void)
 
 void ioapic_enable(int irq, int cpunum)
 {
-    if (!ismp)
-        return;
 
     // Mark interrupt edge-triggered, active high,
     // enabled, and routed to the given cpunum,

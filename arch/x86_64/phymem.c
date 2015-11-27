@@ -3,7 +3,7 @@
 #include <yaos/printk.h>
 #include <asm/pgtable.h>
 #include <yaos/kheap.h>
-#include "pm64.h"
+#include <asm/pm64.h>
 #if 1
 #define DEBUG_PRINTK printk
 #else

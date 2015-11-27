@@ -1,60 +1,86 @@
-#ifndef _ASM_ACPI_H
-#define _ASM_ACPI_H
+#ifndef _ASM_APIC_H
+#define _ASM_APIC_H
 #include <asm/cpu.h>
 #include <asm/apicdef.h>
 #include <asm/msrdef.h>
 #include <yaos/types.h>
+struct msi_message {
+ u64 _test;
+    u64 addr;
+    u32 data;
+};
+struct apic_method {
+    u32(*read) (unsigned reg);
+    void (*write) (unsigned reg, u32 value);
+     u32(*id) ();
+    void (*enable) ();
+    void (*self_ipi) (unsigned vector);
+    void (*ipi) (unsigned apicid, unsigned vector);
+    void (*init_ipi) (unsigned apicid, unsigned vector);
+    void (*ipi_allbutself) (unsigned vector);
+    void (*nmi_allbutself) (unsigned vector);
+    void (*eio) ();
 
+};
+extern struct apic_method *p_apic_func;
 
-static inline u32 x2apic_read(unsigned reg){
-    return rdmsr(0x800+reg/0x10);
-}
-static inline void x2apic_write(unsigned reg,u32 value){
-    wrmsr(0x800+reg/0x10,value);
-}
-static inline u32 x2apic_id(){
-    return x2apic_read((unsigned)(APIC_ID));
-}
-static inline void x2apic_enable(){
-    u64 msr;
-    msr=rdmsr(MSR_IA32_APICBASE);
-    if(msr & X2APIC_ENABLE) return;
-   
-    wrmsr(MSR_IA32_APICBASE,msr|X2APIC_ENABLE);
-}
-static inline void x2apic_disable(){
-    u64 msr=rdmsr(MSR_IA32_APICBASE);
-    if(!(msr&X2APIC_ENABLE))return;
-    wrmsr(MSR_IA32_APICBASE,msr& ~(X2APIC_ENABLE | XAPIC_ENABLE));
-    wrmsr(MSR_IA32_APICBASE,msr& ~(X2APIC_ENABLE));
-
-
-}
-extern u32 *lapic_base;
-static inline u32 xapic_read(unsigned reg){
-    return lapic_base[reg/4];
-}
-static inline void xapic_write(unsigned reg,u32 value){
-    lapic_base[reg/4]=value;
-}
-static inline u32 xapic_id(){
-    return xapic_read((unsigned)(APIC_ID));
+static inline u32 lapic_id()
+{
+    return p_apic_func->id();
 }
 
-extern bool is_x2apic;
-static inline u32 lapic_read(unsigned reg){
-    if(is_x2apic)return x2apic_read(reg);
-    return xapic_read(reg);
+static inline u32 lapic_read(unsigned reg)
+{
+    return p_apic_func->read(reg);
 }
-static inline void lapic_write(unsigned reg,u32 value){
-    if(is_x2apic)x2apic_write(reg,value);
-    else xapic_write(reg,value);
+
+static inline void lapic_write(unsigned reg, u32 val)
+{
+    return p_apic_func->write(reg, val);
 }
-static inline u32 lapic_id(){
-    if(is_x2apic){
-        return x2apic_id();
-    }
-    return lapic_read((unsigned)(APIC_ID))>>24;
+
+static inline void lapic_nmi_allbutself(unsigned vector)
+{
+    return p_apic_func->nmi_allbutself(vector);
 }
-    
+
+static inline void lapic_eio()
+{
+    return p_apic_func->eio();
+}
+
+static inline void lapic_ipi_allbutself(unsigned vector)
+{
+    return p_apic_func->ipi_allbutself(vector);
+}
+
+static inline void lapic_init_ipi(unsigned apicid, unsigned vector)
+{
+    return p_apic_func->init_ipi(apicid, vector);
+}
+
+static inline void lapic_ipi(unsigned apicid, unsigned vector)
+{
+    return p_apic_func->ipi(apicid, vector);
+}
+
+static inline void lapic_enable()
+{
+    return p_apic_func->enable();
+}
+
+static inline void lapic_self_ipi(unsigned vector)
+{
+    return p_apic_func->self_ipi(vector);
+}
+
+static inline u64 lapic_read_base()
+{
+    return rdmsr(MSR_IA32_APICBASE) & 0xFFFFFF000;
+}
+static inline u32 lapic_delivery(u32 mode) 
+{ 
+    return mode << DELIVERY_SHIFT; 
+}
+extern void ioapic_enable(int irq,u32 apicid);
 #endif

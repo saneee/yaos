@@ -1,13 +1,18 @@
 /*zhuhanjun 2015/11/03 Yiwu Saneee Network Co.,LTD.
 */
 #include <asm/cpu.h>
-#include "pm64.h"
+#include <asm/pm64.h>
 #include "yaos.h"
 #include <yaos/printk.h>
 #include <asm/pgtable.h>
 #include <yaos/kheap.h>
 #include <yaos/errno.h>
 #include <asm/cpu.h>
+#include <yaos/init.h>
+#include <yaos/cpupm.h>
+#define IOAPIC_BASE  0xFEC00000      // Default physical address of IO APIC
+
+
 #define MAX_IO_REMAPS 2000
 #if 1
 #define DEBUG_PRINT printk
@@ -53,7 +58,7 @@ struct multiboot_info_type {
 extern void uart_early_init();
 ulong __kernel_start;
 ulong __kernel_end;
-extern char _percpu_start[], _percpu_end[];
+extern char __per_cpu_start[],__per_cpu_end[];
 ulong __max_phy_addr;           //include io memory addr
 ulong __max_phy_mem_addr;       //only useable memory
 ulong __max_linear_addr;
@@ -62,13 +67,13 @@ ulong __percpu_start;
 
 void init_bss()
 {
-    //struct mboot_info *ptr;
+    struct mboot_info *ptr;
     const ulong init_heap_size = 0x10000;	//64k
 
-    //ptr = (struct mboot_info *)0x100000;
-    __kernel_end = (ulong)_percpu_end;//ptr->mboot_bss_end;
-    __percpu_size = (ulong) (_percpu_end - _percpu_start);
-    __percpu_start = (ulong) _percpu_start;
+    ptr = (struct mboot_info *)0x100000;
+    __kernel_end = ptr->mboot_bss_end;
+    __percpu_size = (ulong) (__per_cpu_end - __per_cpu_start);
+    __percpu_start = (ulong) __per_cpu_start;
     free_kheap_4k(__kernel_end, init_heap_size);
     __kernel_end += init_heap_size;
     __kernel_start = 0x100000;  //1M
@@ -97,8 +102,8 @@ typedef struct elf_section_header_table {
     u32 addr;
     u32 shndx;
 } elf_section_header_table_t;
-static long io_remap_pages[MAX_IO_REMAPS + 1];
-static int remaped = 0;
+static long __initdata io_remap_pages[MAX_IO_REMAPS + 1];
+static int __initdata remaped = 0;
 
 static void add_map(int pg)
 {
@@ -125,8 +130,10 @@ static void remap_iomem(void)
             //do not cache io memory 
             if (OK !=
                 map_page_p2v(pg * PAGE_SIZE, pg * PAGE_SIZE + IO_MEM_BASE,
-                             PTE_P | PTE_W | PTE_PWT | PTE_PCD | PTE_PS))
-                panic("No memory\n");
+                             PTE_P | PTE_W | PTE_PWT | PTE_PCD | PTE_PS)){
+                panic("No memory when map page %lx\n",pg*PAGE_SIZE);
+}
+printk("remap:IO:%lx\n",pg*PAGE_SIZE);
         }
     }
 }
@@ -155,7 +162,7 @@ static void on_iomem(u64 addr, u64 size)
         return;
 
     }
-    while (size > PAGE_SIZE) {
+    while (size >= PAGE_SIZE) {
         add_map(addr / PAGE_SIZE + 1);
         addr += PAGE_SIZE;
         size -= PAGE_SIZE;
@@ -189,8 +196,8 @@ static void on_mem(u64, u64);
 static void on_iomem(u64, u64);
 static void deal_reverse(u64 addr, u64 size, bool ismem)
 {
-    extern struct arch_cpu the_cpu;
-    the_cpu.rsp=read_rsp();
+    extern struct cpu the_cpu;
+    the_cpu.arch_cpu.rsp=read_rsp();
     if (addr > max_reverse_addr) {
         if (ismem)
             on_mem(addr, size);
@@ -317,6 +324,7 @@ void init_e820()
 
     add_reverse(0, reverse_low_size);
     add_reverse(__kernel_start, __kernel_end - __kernel_start);
+    add_map(IOAPIC_BASE/PAGE_SIZE+1);//map ioapic
 
     for (mmap = (memory_map_t *) pe820;
          (unsigned long)mmap < (ulong) pe820 + e820map_size;

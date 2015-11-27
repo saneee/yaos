@@ -7,6 +7,7 @@
 
 #ifndef _YAOS_TYPES_H_
 #define _YAOS_TYPES_H_ 1
+#include <yaos/rett.h>//double_ret,ret_t
 typedef _Bool 	bool;
 typedef char 	int8_t;
 typedef short 	int16_t;
@@ -18,8 +19,12 @@ typedef  unsigned short uint16_t;
 typedef  unsigned int uint32_t;
 typedef  unsigned long uint64_t;
 
+typedef unsigned long off_t;
 
-
+typedef unsigned long u_long;
+typedef unsigned int u_int;
+typedef unsigned short u_short;
+typedef unsigned char u_char;
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -60,6 +65,13 @@ typedef __u64 uintp;
 typedef uintp pde_t;
 /* this is a special 64bit data type that is 8-byte aligned */
 #define aligned_u64 __u64 __attribute__((aligned(8)))
+typedef struct {
+        long counter;
+} atomic_t;
+
+typedef unsigned  gfp_t;
+typedef u64 phys_addr_t;
+
    
 #include <yaos/stddef.h>
 #endif /* _YAOS_TYPES_H_ */

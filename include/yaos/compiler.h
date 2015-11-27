@@ -197,10 +197,10 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
 static __always_inline void __read_once_size(const volatile void *p, void *res, int size)
 {
 	switch (size) {
-	case 1: *(__u8 *)res = *(volatile __u8 *)p; break;
-	case 2: *(__u16 *)res = *(volatile __u16 *)p; break;
-	case 4: *(__u32 *)res = *(volatile __u32 *)p; break;
-	case 8: *(__u64 *)res = *(volatile __u64 *)p; break;
+	case 1: *(u8 *)res = *(volatile u8 *)p; break;
+	case 2: *(u16 *)res = *(volatile u16 *)p; break;
+	case 4: *(u32 *)res = *(volatile u32 *)p; break;
+	case 8: *(u64 *)res = *(volatile u64 *)p; break;
 	default:
 		barrier();
 		__builtin_memcpy((void *)res, (const void *)p, size);
@@ -211,10 +211,10 @@ static __always_inline void __read_once_size(const volatile void *p, void *res, 
 static __always_inline void __write_once_size(volatile void *p, void *res, int size)
 {
 	switch (size) {
-	case 1: *(volatile __u8 *)p = *(__u8 *)res; break;
-	case 2: *(volatile __u16 *)p = *(__u16 *)res; break;
-	case 4: *(volatile __u32 *)p = *(__u32 *)res; break;
-	case 8: *(volatile __u64 *)p = *(__u64 *)res; break;
+	case 1: *(volatile u8 *)p = *(u8 *)res; break;
+	case 2: *(volatile u16 *)p = *(u16 *)res; break;
+	case 4: *(volatile u32 *)p = *(u32 *)res; break;
+	case 8: *(volatile u64 *)p = *(u64 *)res; break;
 	default:
 		barrier();
 		__builtin_memcpy((void *)p, (const void *)res, size);

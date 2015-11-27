@@ -7,8 +7,8 @@
 
 #ifndef _YAOS_ASSERT_H_
 #define _YAOS_ASSERT_H_ 1
-
-#ifndef __
+#include <yaos/printk.h>
+#include <asm/cpu.h>
 #ifdef DEBUG
 #define BUG() do {} while (1)
 #define ASSERT(x)                                                       \
@@ -16,13 +16,13 @@ do {                                                                    \
         if (!(x)) {                                                     \
                 printf("assertion failed %s: %d: %s\n",      \
                        __FILE__, __LINE__, #x);                         \
+                print_regs();\
                 BUG();                                                  \
         }                                                               \
 } while (0)
 #else
 #define ASSERT(x) do { } while (0)
-#endif
 
 #endif/*DEBUG*/
-
+extern void panic(const char *fmt, ...);
 #endif

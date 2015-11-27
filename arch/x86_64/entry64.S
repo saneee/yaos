@@ -89,6 +89,8 @@ ptbl_loop:
 .global entry32mp
 entry32mp:
 # CR3 -> 0x1000 (P4ML)
+
+
   mov $0x1000, %eax
   mov %eax, %cr3
 
@@ -140,6 +142,7 @@ entry64high:
 
 # ensure data segment registers are sane
   xor %rax, %rax
+//  mov $0x10,%eax
   mov %ax, %ss
   mov %ax, %ds
   mov %ax, %es
@@ -167,9 +170,11 @@ __deadloop:
 
 entry64mp:
 # obtain kstack from data block before entryother
+  cli
   mov $0x7000, %rax
-  mov -16(%rax), %rsp
+  mov -16(%rax), %rdx
   mov %rsp,%rbp
+  mov %rdx,%rsp
   jmp ap_main
 
 .global _wrmsr
@@ -181,4 +186,98 @@ wrmsr:
   mov %rsi, %rdx     # val.high -> edx
   wrmsr
   retq
+s_exit_thread:
+  mov %rax,%rdi
+  mov $exit_thread,%rax
+  jmp *%rax
+.global switch_first
+#switch_first(pthread,thread_main,stack,save_stack,arg)
+switch_first_old:
+  mov %rsp,(%rcx)
+  mov %rdx,%rsp
+  push $s_exit_thread
+  mov  %rsi,%rax
+  mov  %r8,%rsi
+#jump to thread_main(pthread,arg)
+  jmp *%rax
+  retq
 
+switch_first:
+  push %rbx
+  push %rbp
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  mov %rsp,(%rcx)
+  mov %rdx,%rsp
+  push $s_exit_thread
+  mov  %rsi,%rax
+  mov  %r8,%rsi
+#jump to thread_main(pthread,arg)
+  jmp *%rax 
+  retq 
+.global switch_to
+#three params (stack_point,save_stack_point,param)  
+switch_to:
+  push %rbx
+  push %rbp
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  mov %rsp,(%rsi)
+  mov %rdi,%rsp
+  mov %rdx,%rax  
+  xor %rdx,%rdx
+switch_ret:
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rbp
+  pop %rbx
+  retq
+  
+.global print_regs
+print_regs:
+  push %r15
+  push %r14
+  push %r13
+  push %r12
+  push %r11
+  push %r10
+  push %r9
+  push %r8
+  push %rdi
+  push %rsi
+  push %rbp
+  push %rdx
+  push %rcx
+  push %rbx
+  push %rax
+
+  mov  %rsp, %rdi  # frame in arg1
+  call cprint_regs
+  pop %rax
+  pop %rbx
+  pop %rcx
+  pop %rdx
+  pop %rbp
+  pop %rsi
+  pop %rdi
+  pop %r8
+  pop %r9
+  pop %r10
+  pop %r11
+  pop %r12
+  pop %r13
+  pop %r14
+  pop %r15
+  retq
+
+.global irq_switch
+irq_switch:
+  mov %rsp,(%rsi)
+  mov %rdi,%rsp
+  retq  

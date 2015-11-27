@@ -13,6 +13,7 @@
 #else
 #define DEBUG_PRINT inline_printk
 #endif
+
 struct kheap_t;
 struct kheap_t {
     ulong addr;
@@ -82,7 +83,6 @@ void free_kheap_4k(ulong addr, ulong size)
     DEBUG_PRINT("KHeap: Free:%lx,addr,size:%lx\n", addr, size);
 }
 
-
 void *alloc_kheap_4k(ulong size)
 {
     struct kheap_t *p;
@@ -102,7 +102,7 @@ void *alloc_kheap_4k(ulong size)
         newaddr = alloc_phy_page();
         if (!newaddr)
             return (void *)0;
-        free_kheap_4k(newaddr,PAGE_SIZE);
+        free_kheap_4k(newaddr, PAGE_SIZE);
         spin_lock(&spin_4k);
         p = phead4k;
         while (p && p->size < size)
@@ -113,8 +113,9 @@ void *alloc_kheap_4k(ulong size)
     if (p->size == 0) {
         //add to free link?
         struct kheap_t *ptr = phead4k;
-        if(ptr==p){
-            phead4k=phead4k->pnext;
+
+        if (ptr == p) {
+            phead4k = phead4k->pnext;
         }
         else if (ptr->pnext == p) {
             ptr->pnext = p->pnext;
@@ -186,8 +187,9 @@ void *alloc_kheap_small(ulong size)
     if (p->size <= 16) {        //drop small than 16
         //add to free link?
         struct kheap_t *ptr = phead_small;
-        if(ptr==p){
-            phead_small=phead_small->pnext;
+
+        if (ptr == p) {
+            phead_small = phead_small->pnext;
         }
         else if (ptr->pnext == p) {
             ptr->pnext = p->pnext;
@@ -208,12 +210,14 @@ void *alloc_kheap_small(ulong size)
     spin_unlock(&spin_small);
     return pret;
 }
+
 void kheap_debug()
 {
-    struct kheap_t *ptr=phead4k;
+    struct kheap_t *ptr = phead4k;
+
     printk("kheap 4k:\n");
-    while(ptr){
-        printk("addr:%lx,size:%lx\n",ptr->addr,ptr->size);
-        ptr=ptr->pnext;
+    while (ptr) {
+        printk("addr:%lx,size:%lx\n", ptr->addr, ptr->size);
+        ptr = ptr->pnext;
     }
 }

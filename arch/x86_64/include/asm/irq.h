@@ -9,6 +9,13 @@
 
 #include <asm/apicdef.h>
 #include <asm/irq_vectors.h>
-
-
+typedef void (*irq_handler_t) (int irq);
+extern irq_handler_t irq_vectors[256];
+static inline irq_handler_t register_irq(irq_handler_t pnew,int irq)
+{
+    int n=irq+T_IRQ0;
+    irq_handler_t old=irq_vectors[n];
+    irq_vectors[n]=pnew;
+    return old;
+}
 #endif /* _ASM_X86_IRQ_H */

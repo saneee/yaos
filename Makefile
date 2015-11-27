@@ -5,8 +5,14 @@ all: yaos.img
 X64 = 1
 
 BITS = 64
-XFLAGS = -DDEBUG -D__KERNEL__ -std=gnu99 -m64 -DX64 -mcmodel=kernel -mtls-direct-seg-refs -mno-red-zone
-LDFLAGS = -m elf_x86_64 -nodefaultlibs
+XFLAGS = -DDEBUG -std=gnu99 -m64 -DX64 -mcmodel=kernel -mtls-direct-seg-refs -mno-red-zone
+LDFLAGS = -m elf_x86_64 -nodefaultlibs  
+
+FSGSBASE=$(shell cat /proc/cpuinfo|grep fsgsbase)
+ifneq ($(strip $(FSGSBASE)),)
+   XFLAGS+= -D__FSGSBASE__
+endif
+
 
 OUT = out
 
@@ -14,7 +20,7 @@ HOST_CC ?= gcc
 
 # specify OPT to enable optimizations. improves performance, but may make
 # debugging more difficult
-OPT ?= -Os
+OPT ?= -O2
 
 
 ifneq ("$(MEMFS)","")
@@ -24,12 +30,31 @@ OBJS := $(filter-out ide.o,$(OBJS)) memide.o
 FSIMAGE := fs.img
 endif
 ARCHOBJ_DIR =.archobj
+DOBJ_DIR =.dobj
 KOBJ_DIR = .kobj
 OBJS := $(addprefix $(KOBJ_DIR)/,$(OBJS))
-AOBJS :=  entry64.o pm64.o main.o uart.o   vgaoutput.o string64.o cpu.o \
-vectors.o trapasm64.o multiboot.o mmu.o pgtable.o phymem.o apic.o acpi.o
-KOBJS :=  yaos.o printk.o  kheap.o
-OBJS := $(addprefix $(ARCHOBJ_DIR)/,$(AOBJS)) $(addprefix $(KOBJ_DIR)/,$(KOBJS)) 
+AOBJS :=  entry64.o pm64.o main.o uart.o   vgaoutput.o  cpu.o \
+vectors.o trapasm64.o multiboot.o mmu.o pgtable.o phymem.o apic.o acpi.o \
+trap.o ioapic.o time.o pci.o irq.o lib/memset_64.o lib/memmove_64.o \
+lib/memcpy_64.o alternative.o lib/copy_page_64.o lib/clear_page_64.o \
+lib/iomap_copy_64.o
+KOBJS :=  yaos.o printk.o  kheap.o vm.o thread.o module.o yaoscall.o main.o \
+smp.o yaos_page.o dummy.o
+DOBJS := pci_device.o virtio_net.o pci_function.o virtio.o
+
+ifneq ($(MAKECMDGOALS),clean)
+include $(shell test -d $(ARCHOBJ_DIR) && find $(ARCHOBJ_DIR) -name '*.d')
+include $(shell test -d $(DOBJ_DIR) && find $(DOBJ_DIR) -name '*.d')
+include $(shell test -d $(KOBJ_DIR) && find $(KOBJ_DIR) -name '*.d')
+
+endif
+
+MODULEC_SOURCES = $(shell find module -name "*.c")
+MODULEC_OBJECTS = $(patsubst %.c, %.o, $(MODULEC_SOURCES))
+
+OBJS := $(addprefix $(ARCHOBJ_DIR)/,$(AOBJS)) \
+          $(addprefix $(KOBJ_DIR)/,$(KOBJS)) $(addprefix $(DOBJ_DIR)/,$(DOBJS)) 
+OBJS += $(MODULEC_OBJECTS)
 # Cross-compiling (e.g., on Mac OS X)
 CROSS_COMPILE ?=
 
@@ -48,11 +73,23 @@ cc-option = $(shell if $(CC) $(1) -S -o /dev/null -xc /dev/null \
 	> /dev/null 2>&1; then echo "$(1)"; else echo "$(2)"; fi ;)
 
 CFLAGS = -fno-pic -static -fno-builtin -fno-strict-aliasing -Wall -Werror
-CFLAGS += -g -Wall -MD -fno-omit-frame-pointer
-CFLAGS += -ffreestanding -fno-common -nostdlib -I arch/x86_64/include -Iinclude -gdwarf-2 $(XFLAGS) $(OPT)
+CFLAGS += -g -Wall -MD -D__KERNEL__ -fno-omit-frame-pointer
+CFLAGS += -ffreestanding -fno-common -nostdlib -I arch/x86_64/include -Iinclude -I bsd/sys -gdwarf-2 $(XFLAGS) $(OPT)
 CFLAGS += $(call cc-option, -fno-stack-protector, "")
 CFLAGS += $(call cc-option, -fno-stack-protector-all, "")
-ASFLAGS = -gdwarf-2 -Wa,-divide -Iinclude $(XFLAGS)
+ASFLAGS = -gdwarf-2 -Wa,-divide -D__ASSEMBLY__ -Iinclude -I arch/x86_64/include $(XFLAGS)
+
+MODULEC_FLAGS=$(CFLAGS) -D_MODULE
+acpi-defines = -DACPI_MACHINE_WIDTH=64 -DACPI_USE_LOCAL_CACHE
+
+acpi-source := $(shell find extern/x64/acpica/components -type f -name '*.c')
+acpi = $(patsubst %.c, %.o, $(acpi-source))
+
+ACPIOBJ=$(acpi)
+$(acpi:%=$(out)/%): CFLAGS += -fno-strict-aliasing -Wno-strict-aliasing -iextern/x64/acpica/include/
+
+out/acpi.o:$(acpi)
+        
 
 yaos.img: $(OUT)/bootblock $(OUT)/kernel.elf fs.img
 	dd if=/dev/zero of=yaos.img count=10000
@@ -79,7 +116,20 @@ $(ARCHOBJ_DIR)/%.o: arch/x86_64/%.c
 
 $(ARCHOBJ_DIR)/%.o: arch/x86_64/%.S
 	@mkdir -p $(ARCHOBJ_DIR)
+	@mkdir -p $(ARCHOBJ_DIR)/lib
 	 $(CC) $(ASFLAGS) -c -o $@ $<
+
+$(DOBJ_DIR)/%.o: drivers/%.c
+	@mkdir -p $(DOBJ_DIR)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(DOBJ_DIR)/%.o: drivers/%.S
+	@mkdir -p $(DOBJ_DIR)
+	$(CC) $(ASFLAGS) -c -o $@ $<
+
+.c.o:
+	$(CC) $(MODULEC_FLAGS) -c $< -o $@
+
 
 
 UOBJ_DIR = .uobj
@@ -128,9 +178,10 @@ $(OUT)/initcode: $(INITCODESRC)
 
 ENTRYCODE = $(ARCHOBJ_DIR)/entry64.o
 LINKSCRIPT = arch/x86_64/kernel64.ld
+LIBS=libs/libstring.a
 $(OUT)/kernel.elf: $(OBJS)  $(OUT)/entryother $(OUT)/initcode $(LINKSCRIPT) $(FSIMAGE)
 	$(LD) $(LDFLAGS) -T $(LINKSCRIPT) -o $(OUT)/kernel.elf \
-		$(OBJS) \
+		$(OBJS) $(LIBS)\
 		-b binary $(OUT)/initcode $(OUT)/entryother $(FSIMAGE)
 	$(OBJDUMP) -S $(OUT)/kernel.elf > $(OUT)/kernel.asm
 	$(OBJDUMP) -t $(OUT)/kernel.elf | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(OUT)/kernel.sym
@@ -210,9 +261,9 @@ $(FS_DIR)/README: README
 #-include */*.d
 
 clean: 
-	rm -rf $(OUT) $(FS_DIR) $(UOBJ_DIR) $(KOBJ_DIR) $(ARCHOBJ_DIR)
+	rm -rf $(OUT) $(FS_DIR) $(UOBJ_DIR) $(KOBJ_DIR) $(ARCHOBJ_DIR) $(DOBJ_DIR)
 	rm -f kernel/vectors.S yaos.img yaosmemfs.img  .gdbinit
-
+	rm -rf $(MODULEC_OBJECTS)
 # run in emulators
 
 # try to generate a unique GDB port
@@ -226,11 +277,11 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 ifndef CPUS
 CPUS := $(shell grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 endif
-QEMUOPTS = -net none -kernel out/kernel.elf -smp $(CPUS) -m 512 $(QEMUEXTRA)
+QEMUOPTS =-enable-kvm -cpu host,+x2apic -kernel out/kernel.elf -smp $(CPUS) -m 512 $(QEMUEXTRA)
 
 qemu: yaos.img
 	@echo Ctrl+a h for help
-	$(QEMU) -serial mon:stdio  $(QEMUOPTS)
+	$(QEMU) -serial mon:stdio  -nographic -netdev type=tap,script=qemu-ifup.sh,id=net0 -device virtio-net-pci,netdev=net0 $(QEMUOPTS)
 
 qemu-memfs: yaosmemfs.img
 	@echo Ctrl+a h for help
@@ -239,7 +290,6 @@ qemu-memfs: yaosmemfs.img
 qemu-nox:  yaos.img
 	@echo Ctrl+a h for help
 	$(QEMU) -nographic $(QEMUOPTS)
-
 .gdbinit: tools/gdbinit.tmpl
 	sed "s/localhost:1234/localhost:$(GDBPORT)/" < $^ > $@
 

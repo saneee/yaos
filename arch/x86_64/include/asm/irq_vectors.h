@@ -10,6 +10,7 @@
  * (0x80 is the syscall vector, 0x30-0x3f are for ISA)
  */
 #define FIRST_EXTERNAL_VECTOR		0x20
+#define T_IRQ0				FIRST_EXTERNAL_VECTOR
 /*
  * We start allocating at 0x21 to spread out vectors evenly between
  * priority levels. (0x80 is the syscall vector)

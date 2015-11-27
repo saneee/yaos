@@ -26,6 +26,7 @@
 start:
   cli            
 
+
   xorw    %ax,%ax
   movw    %ax,%ds
   movw    %ax,%es
@@ -41,6 +42,7 @@ start:
 
 .code32
 start32:
+
   movw    $(SEG_KDATA<<3), %ax
   movw    %ax, %ds
   movw    %ax, %es
@@ -56,6 +58,8 @@ start32:
   movl    %eax,%esp
   movl    %esp,%ebp
   # Call mpenter()
+
+
   call	 *(start-8)
 
   movw    $0x8a00, %ax
