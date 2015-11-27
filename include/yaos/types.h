@@ -20,7 +20,7 @@ typedef  unsigned int uint32_t;
 typedef  unsigned long uint64_t;
 
 typedef unsigned long off_t;
-
+typedef unsigned long uintptr_t;
 typedef unsigned long u_long;
 typedef unsigned int u_int;
 typedef unsigned short u_short;

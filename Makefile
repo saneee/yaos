@@ -52,9 +52,13 @@ endif
 MODULEC_SOURCES = $(shell find module -name "*.c")
 MODULEC_OBJECTS = $(patsubst %.c, %.o, $(MODULEC_SOURCES))
 
+LIBS_SOURCES = $(shell find libs -name "*.c")
+LIBS_OBJECTS = $(patsubst %.c, %.o, $(LIBS_SOURCES))
+
+
 OBJS := $(addprefix $(ARCHOBJ_DIR)/,$(AOBJS)) \
           $(addprefix $(KOBJ_DIR)/,$(KOBJS)) $(addprefix $(DOBJ_DIR)/,$(DOBJS)) 
-OBJS += $(MODULEC_OBJECTS)
+OBJS += $(MODULEC_OBJECTS) $(LIBS_OBJECTS)
 # Cross-compiling (e.g., on Mac OS X)
 CROSS_COMPILE ?=
 
@@ -178,7 +182,7 @@ $(OUT)/initcode: $(INITCODESRC)
 
 ENTRYCODE = $(ARCHOBJ_DIR)/entry64.o
 LINKSCRIPT = arch/x86_64/kernel64.ld
-LIBS=libs/libstring.a
+LIBS=
 $(OUT)/kernel.elf: $(OBJS)  $(OUT)/entryother $(OUT)/initcode $(LINKSCRIPT) $(FSIMAGE)
 	$(LD) $(LDFLAGS) -T $(LINKSCRIPT) -o $(OUT)/kernel.elf \
 		$(OBJS) $(LIBS)\
@@ -264,6 +268,7 @@ clean:
 	rm -rf $(OUT) $(FS_DIR) $(UOBJ_DIR) $(KOBJ_DIR) $(ARCHOBJ_DIR) $(DOBJ_DIR)
 	rm -f kernel/vectors.S yaos.img yaosmemfs.img  .gdbinit
 	rm -rf $(MODULEC_OBJECTS)
+	rm -rf $(LIBS_OBJECTS)
 # run in emulators
 
 # try to generate a unique GDB port
