@@ -1,0 +1,11 @@
+#include <yaos/types.h>
+#include <drivers/netdriver.h>
+static const struct netdriver *netdriver_table = NULL;
+static bool running;
+void netdriver_task(const struct netdriver * ndp)
+{
+    running=true;
+    netdriver_table=ndp;
+    while(running){
+    }
+}
