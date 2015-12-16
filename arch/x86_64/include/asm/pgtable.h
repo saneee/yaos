@@ -1,18 +1,25 @@
 #ifndef _ASM_PH_PAGE_H
 #define _ASM_PH_PAGE_H
 #define IO_MEM_BASE	0xfffffff800000000
-static inline ulong P2V(ulong addr){
-    return addr; 
+static inline ulong P2V(ulong addr)
+{
+    return addr;
 };
-static inline ulong V2P(ulong addr){
+
+static inline ulong V2P(ulong addr)
+{
     return addr;
 }
-static inline ulong IO2V(ulong addr){
-    return addr+IO_MEM_BASE;
+
+static inline ulong IO2V(ulong addr)
+{
+    return addr + IO_MEM_BASE;
 }
-extern void *ioremap_nocache(ulong addr,ulong size);
-extern int map_page_p2v(ulong p,ulong v,ulong uflag);
+
+extern void *ioremap_nocache(ulong addr, ulong size);
+extern int map_page_p2v(ulong p, ulong v, ulong uflag);
 extern u64 get_pte_with_addr(ulong addr);
+
 /*2M hug page */
 #define PAGE_SIZE 0x200000
 // Page table/directory entry flags.
@@ -28,9 +35,8 @@ extern u64 get_pte_with_addr(ulong addr);
 
 static inline int map_page_p2v_rw(ulong paddr, ulong vaddr)
 {
-    return map_page_p2v(paddr,vaddr,PTE_P|PTE_W|PTE_PS);
+    return map_page_p2v(paddr, vaddr, PTE_P | PTE_W | PTE_PS);
 }
-
 
 /*
  * PGDIR_SHIFT determines what a top-level page table entry can map

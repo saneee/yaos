@@ -7,6 +7,7 @@
 #include <yaos/percpu.h>
 #include <yaos/init.h>
 #include <yaos/atomic.h>
+#include <yaos/time.h>
 #include <yaoscall/malloc.h>
 #ifndef MAX_THREADS_PER_CPU
 #define MAX_THREADS_PER_CPU 1000
@@ -31,6 +32,13 @@ pthread create_thread(ulong stack_size, void *main);
 ret_t resume_thread(pthread p, ulong arg);
 ret_t yield_thread(ulong arg);
 atomic_t idlenr = ATOMIC_INIT(0);
+void sched_yield(void);
+void test_timeout(u64 nowmsec)
+{
+    set_timeout(10000, test_timeout);
+    DEBUG_PRINT("now msec:%d,cpuid:%d\n", nowmsec, cpuid_apic_id());
+}
+
 static void thread_main(pthread p, ulong arg)
 {
     p->status = THREAD_RUN;
@@ -41,14 +49,14 @@ static ret_t test_thread(ulong arg1)
 {
     ret_t ret;
 
-    printk("test_thread 1start %lx,%lx\n", arg1);
+    DEBUG_PRINT("test_thread 1start %lx,%lx\n", arg1);
     ret = yield_thread(ret.v * 16);
-    printk("test_thread 2 start %lx\n", ret.v);
+    DEBUG_PRINT("test_thread 2 start %lx\n", ret.v);
     ret = yield_thread(arg1 * 16);
-    printk("test_thread 3 start %lx\n", ret.v);
+    DEBUG_PRINT("test_thread 3 start %lx\n", ret.v);
 
     ret = yield_thread(arg1 * 256);
-    printk("test_thread 3 start %lx\n", ret.v);
+    DEBUG_PRINT("test_thread 3 start %lx\n", ret.v);
     ret.v = 0x87654321;
     ret.e = 0;
     return ret;
@@ -61,16 +69,20 @@ static ret_t idle_main(ulong arg1)
     ret_t result;
     __thread cpu_p pcpu = get_current_cpu();
 
-    printk("idle_main start %lx\n", arg1);
+    DEBUG_PRINT("idle_main start %lx\n", arg1);
     atomic_inc(&idlenr);
+//set_timeout(1000,test_timeout);
+
     if (is_bp_cpu(pcpu)) {
         void *p2 = 0;
 
-        for (size_t i = 8; i < 2096; i += 8) {
+//set_timeout(1000,test_timeout);
+
+        for (size_t i = 8; i < 9; i += 8) {
 
             void *p = yaos_malloc(i);
 
-            printk("malloc:return %lx,size:%lx\n", p, i);
+            DEBUG_PRINT("malloc:return %lx,size:%lx\n", p, i);
             if (p2 != 0) {
                 yaos_mfree(p);
                 yaos_mfree(p2);
@@ -80,21 +92,23 @@ static ret_t idle_main(ulong arg1)
                 p2 = p;
         }
     }
+    sti();
     for (;;)
-        sti_hlt();
+        sched_yield();
+    sti_hlt();
     p = create_thread(PAGE_SIZE, test_thread);
     result = resume_thread(p, 0x123);
-    printk("resume return %lx\n", result.v);
+    DEBUG_PRINT("resume return %lx\n", result.v);
     result = resume_thread(p, 0x456);
-    printk("resume return %lx\n", result.v);
+    DEBUG_PRINT("resume return %lx\n", result.v);
     result = resume_thread(p, 0x789);
-    printk("resume return %lx\n", result.v);
+    DEBUG_PRINT("resume return %lx\n", result.v);
     result = resume_thread(p, 0x9999);
-    printk("resume return:%lx\n", result.v);
-    printk("thread status:%d,%lx\n", p->status, p);
+    DEBUG_PRINT("resume return:%lx\n", result.v);
+    DEBUG_PRINT("thread status:%d,%lx\n", p->status, p);
     result = resume_thread(p, 0x8888);
-    printk("resume return:%lx\n", result.v);
-    printk("hello world\n");
+    DEBUG_PRINT("resume return:%lx\n", result.v);
+    DEBUG_PRINT("hello world\n");
     for (;;)
         sti_hlt();
     result.v = 0;
@@ -115,7 +129,8 @@ ret_t exit_thread(ulong arg)
 
     p = pold->father;
     pold->status = THREAD_DONE;
-    printk("thread exist:%lx,status:%d,%lx,%lx\n", arg, pold->status, pold, p);
+    DEBUG_PRINT("thread exist:%lx,status:%d,%lx,%lx\n", arg, pold->status, pold,
+                p);
     print_regs();
     if (unlikely(!p)) {
         panic("no father thread running\n");
@@ -133,7 +148,7 @@ ret_t exit_thread(ulong arg)
             return arch_switch_to(p, pold, arg);
         }
     }
-    printk("exec exist thread\n");
+    DEBUG_PRINT("exec exist thread\n");
     for (;;)
         sti_hlt();
 }
@@ -144,7 +159,7 @@ ret_t resume_thread(pthread p, ulong arg)
     __thread cpu_p pcpu = get_current_cpu();
 
     if (p->status == THREAD_DONE) {
-        printk("resume done thread\n");
+        DEBUG_PRINT("resume done thread\n");
         ret_t t = { 0, -1 };
         return t;
     }
@@ -209,7 +224,7 @@ pthread create_thread(ulong stack_size, void *main)
         ulong stack_addr = (ulong) alloc_vm_stack(stack_size);
 
         if (unlikely(!stack_addr)) {
-            printk("no memory alloc stack:%lx\n", stack_size);
+            DEBUG_PRINT("no memory alloc stack:%lx\n", stack_size);
             *ptr = p;
             return (pthread) 0;
         }
@@ -224,7 +239,7 @@ pthread create_thread(ulong stack_size, void *main)
     ptr = (pthread *) cpu_percpu_valp(pcpu, &p_head);
     p->pnext = *ptr;
     *ptr = p;
-    printk("create_thread ptr:%lx,%lx\n", ptr, *(ulong *) ptr);
+    DEBUG_PRINT("create_thread ptr:%lx,%lx\n", ptr, *(ulong *) ptr);
     return p;
 }
 
@@ -305,7 +320,7 @@ __init void init_thread_ap(void)
 __init int static init_thread_call(bool isbp)
 {
     init_thread_ap();
-    
+
     return 0;
 }
 

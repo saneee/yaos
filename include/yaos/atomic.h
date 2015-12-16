@@ -3,5 +3,4 @@
 #include <asm/atomic.h>
 #include <asm/cmpxchg.h>
 
-
 #endif

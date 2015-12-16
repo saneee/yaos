@@ -50,7 +50,6 @@
                 (__x < 0) ? -__x : __x;         \
         })
 
-
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
 
 #ifndef BUILD_BUG_ON
@@ -58,11 +57,14 @@
 #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
 #define BUILD_BUG_ON_NULL(e) ((void *)sizeof(struct { int:-!!(e); }))
 
-
 #define BUILD_BUG_ON(condition) \
 BUILD_BUG_ON_MSG(condition, "BUILD_BUG_ON failed: " #condition)
 
 #endif
 
+#define container_of(ptr, type, member) ({                      \
+        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+        (type *)( (char *)__mptr - offsetof(type,member) );})
 
+extern void check_stack(void);
 #endif

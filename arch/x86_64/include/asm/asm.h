@@ -2,17 +2,17 @@
 #define _ASM_X86_ASM_H
 
 #ifdef __ASSEMBLY__
-# define __ASM_FORM(x)	x
-# define __ASM_FORM_RAW(x)     x
-# define __ASM_FORM_COMMA(x) x,
+#define __ASM_FORM(x)	x
+#define __ASM_FORM_RAW(x)     x
+#define __ASM_FORM_COMMA(x) x,
 #else
-# define __ASM_FORM(x)	" " #x " "
-# define __ASM_FORM_RAW(x)     #x
-# define __ASM_FORM_COMMA(x) " " #x ","
+#define __ASM_FORM(x)	" " #x " "
+#define __ASM_FORM_RAW(x)     #x
+#define __ASM_FORM_COMMA(x) " " #x ","
 #endif
 
-# define __ASM_SEL(a,b) __ASM_FORM(b)
-# define __ASM_SEL_RAW(a,b) __ASM_FORM_RAW(b)
+#define __ASM_SEL(a,b) __ASM_FORM(b)
+#define __ASM_SEL_RAW(a,b) __ASM_FORM_RAW(b)
 
 #define __ASM_SIZE(inst, ...)	__ASM_SEL(inst##l##__VA_ARGS__, \
 					  inst##q##__VA_ARGS__)
@@ -39,59 +39,46 @@
 
 /* Exception table entry */
 #ifdef __ASSEMBLY__
-# define _ASM_EXTABLE(from,to)					\
+#define _ASM_EXTABLE(from,to)					\
 	.pushsection "__ex_table","a" ;				\
 	.balign 8 ;						\
 	.long (from) - . ;					\
 	.long (to) - . ;					\
 	.popsection
 
-# define _ASM_EXTABLE_EX(from,to)				\
+#define _ASM_EXTABLE_EX(from,to)				\
 	.pushsection "__ex_table","a" ;				\
 	.balign 8 ;						\
 	.long (from) - . ;					\
 	.long (to) - . + 0x7ffffff0 ;				\
 	.popsection
 
-# define _ASM_NOKPROBE(entry)					\
+#define _ASM_NOKPROBE(entry)					\
 	.pushsection "_kprobe_blacklist","aw" ;			\
 	_ASM_ALIGN ;						\
 	_ASM_PTR (entry);					\
 	.popsection
 
 .macro ALIGN_DESTINATION
-	/* check for bad alignment of destination */
-	movl %edi,%ecx
-	andl $7,%ecx
-	jz 102f				/* already aligned */
-	subl $8,%ecx
-	negl %ecx
-	subl %ecx,%edx
-100:	movb (%rsi),%al
-101:	movb %al,(%rdi)
-	incq %rsi
-	incq %rdi
-	decl %ecx
-	jnz 100b
-102:
-	.section .fixup,"ax"
-103:	addl %ecx,%edx			/* ecx is zerorest also */
-	jmp copy_user_handle_tail
-	.previous
-
-	_ASM_EXTABLE(100b,103b)
-	_ASM_EXTABLE(101b,103b)
-	.endm
-
+    /* check for bad alignment of destination */
+    movl % edi, %ecx andl $7, %ecx jz 102f	/* already aligned */
+subl $8, %ecx negl % ecx subl % ecx, %edx 100: movb(%rsi), %al 101:movb % al,
+    (%rdi)
+incq % rsi incq % rdi decl % ecx jnz 100 b 102:
+.section.fixup, "ax" 103:addl % ecx, %edx
+                                /* ecx is zerorest also */
+jmp copy_user_handle_tail.previous
+_ASM_EXTABLE(100 b, 103 b) _ASM_EXTABLE(101 b, 103 b)
+.endm
 #else
-# define _ASM_EXTABLE(from,to)					\
+#define _ASM_EXTABLE(from,to)					\
 	" .pushsection \"__ex_table\",\"a\"\n"			\
 	" .balign 8\n"						\
 	" .long (" #from ") - .\n"				\
 	" .long (" #to ") - .\n"				\
 	" .popsection\n"
 
-# define _ASM_EXTABLE_EX(from,to)				\
+#define _ASM_EXTABLE_EX(from,to)				\
 	" .pushsection \"__ex_table\",\"a\"\n"			\
 	" .balign 8\n"						\
 	" .long (" #from ") - .\n"				\

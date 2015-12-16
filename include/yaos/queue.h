@@ -111,10 +111,10 @@
 #ifdef QUEUE_MACRO_DEBUG
 /* Store the last 2 places the queue element or head was altered */
 struct qm_trace {
-	unsigned long	 lastline;
-	unsigned long	 prevline;
-	const char	*lastfile;
-	const char	*prevfile;
+    unsigned long lastline;
+    unsigned long prevline;
+    const char *lastfile;
+    const char *prevfile;
 };
 
 #define	TRACEBUF	struct qm_trace trace;
@@ -143,7 +143,7 @@ struct qm_trace {
 #define	TRACEBUF
 #define	TRACEBUF_INITIALIZER
 #define	TRASHIT(x)
-#endif	/* QUEUE_MACRO_DEBUG */
+#endif /* QUEUE_MACRO_DEBUG */
 
 #ifdef __cplusplus
 /*
@@ -388,7 +388,6 @@ struct {								\
 	if (STAILQ_EMPTY(head2))					\
 		(head2)->stqh_last = &STAILQ_FIRST(head2);		\
 } while (0)
-
 
 /*
  * List declarations.

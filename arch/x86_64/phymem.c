@@ -4,6 +4,7 @@
 #include <asm/pgtable.h>
 #include <yaos/kheap.h>
 #include <asm/pm64.h>
+#include <yaos/assert.h>
 #if 1
 #define DEBUG_PRINTK printk
 #else

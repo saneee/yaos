@@ -4,26 +4,26 @@
 #define MOD_ERR_OK	0
 #include <yaos/compiler.h>
 typedef enum modeventtype {
-        MOD_BPLOAD,
-        MOD_APLOAD,
-        MOD_UNLOAD,
-        MOD_SHUTDOWN,
-        MOD_QUIESCE
+    MOD_BPLOAD,
+    MOD_APLOAD,
+    MOD_UNLOAD,
+    MOD_SHUTDOWN,
+    MOD_QUIESCE
 } modeventtype_t;
 struct module;
 typedef struct module *module_t;
-typedef int (*modeventhand_t)(module_t, unsigned long, void *);
+typedef int (*modeventhand_t) (module_t, unsigned long, void *);
 struct moduledata {
-        const char      *name;          /* module name */
-        modeventhand_t  evhand;         /* event handler */
-        void            *priv;          /* extra data */
-}__packed;
+    const char *name;           /* module name */
+    modeventhand_t evhand;      /* event handler */
+    void *priv;                 /* extra data */
+} __packed;
 typedef struct moduledata moduledata_t;
 typedef union modspecific {
-        int     intval;
-        u_int   uintval;
-        long    longval;
-        u_long  ulongval;
+    int intval;
+    u_int uintval;
+    long longval;
+    u_long ulongval;
 } modspecific_t;
 
 #define DECLARE_MODULE(name,data,func) \

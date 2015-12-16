@@ -31,7 +31,6 @@
 #define _DEVICE_H
 #include <yaos/types.h>
 
-
 #define MAXDEVNAME	12
 #define DO_RWMASK	0x3
 #define DEVCLASS_MAXUNIT 32
@@ -42,10 +41,10 @@ struct device;
  * Device information
  */
 struct devinfo {
-	u_long		cookie;		/* index cookie */
-	struct device	*id;		/* device id */
-	int		flags;		/* device characteristics flags */
-	char		name[MAXDEVNAME]; /* device name */
+    u_long cookie;              /* index cookie */
+    struct device *id;          /* device id */
+    int flags;                  /* device characteristics flags */
+    char name[MAXDEVNAME];      /* device name */
 };
 
 /*
@@ -57,27 +56,26 @@ struct devinfo {
 #define D_TTY		0x00000010	/* tty device */
 
 struct uio;
-typedef int (*devop_open_t)   (struct device *, int);
-typedef int (*devop_close_t)  (struct device *);
-typedef int (*devop_read_t)   (struct device *, struct uio *, int);
-typedef int (*devop_write_t)  (struct device *, struct uio *, int);
-typedef int (*devop_ioctl_t)  (struct device *, u_long, void *);
+typedef int (*devop_open_t) (struct device *, int);
+typedef int (*devop_close_t) (struct device *);
+typedef int (*devop_read_t) (struct device *, struct uio *, int);
+typedef int (*devop_write_t) (struct device *, struct uio *, int);
+typedef int (*devop_ioctl_t) (struct device *, u_long, void *);
 typedef int (*devop_devctl_t) (struct device *, u_long, void *);
-typedef void (*devop_strategy_t)(struct bio *);
+typedef void (*devop_strategy_t) (struct bio *);
 
 /*
  * Device operations
  */
 struct devops {
-	devop_open_t	open;
-	devop_close_t	close;
-	devop_read_t	read;
-	devop_write_t	write;
-	devop_ioctl_t	ioctl;
-	devop_devctl_t	devctl;
-	devop_strategy_t strategy;
+    devop_open_t open;
+    devop_close_t close;
+    devop_read_t read;
+    devop_write_t write;
+    devop_ioctl_t ioctl;
+    devop_devctl_t devctl;
+    devop_strategy_t strategy;
 };
-
 
 #define	no_open		((devop_open_t)nullop)
 #define	no_close	((devop_close_t)nullop)
@@ -90,10 +88,10 @@ struct devops {
  * Driver object
  */
 struct driver {
-	const char	*name;		/* name of device driver */
-	struct devops	*devops;	/* device operations */
-	size_t		devsz;		/* size of private data */
-	int		flags;		/* state of driver */
+    const char *name;           /* name of device driver */
+    struct devops *devops;      /* device operations */
+    size_t devsz;               /* size of private data */
+    int flags;                  /* state of driver */
 };
 
 /*
@@ -101,92 +99,83 @@ struct driver {
  */
 
 typedef enum device_state {
-    DS_INACTIVE	    = 0x00,		/* driver is inactive */
-    DS_ALIVE	    = 0x01,		/* probe succeded */
-    DS_ACTIVE	    = 0x02,		/* intialized */
-    DS_DEBUG	    = 0x04,		/* debug */
-    DS_NOTPRESENT   = 0x08,     /* not probed or probe failed */
-    DS_ATTACHING    = 0x10,     /* currently attaching */
-    DS_ATTACHED     = 0x20,     /*attach method called */
+    DS_INACTIVE = 0x00,         /* driver is inactive */
+    DS_ALIVE = 0x01,            /* probe succeded */
+    DS_ACTIVE = 0x02,           /* intialized */
+    DS_DEBUG = 0x04,            /* debug */
+    DS_NOTPRESENT = 0x08,       /* not probed or probe failed */
+    DS_ATTACHING = 0x10,        /* currently attaching */
+    DS_ATTACHED = 0x20,         /*attach method called */
 } device_state_t;
 
 /*
  * Device object
  */
 struct device {
-	struct device	*next;		/* linkage on list of all devices */
-	struct driver	*driver;	/* pointer to the driver object */
-	char		name[MAXDEVNAME]; /* name of device */
-	int		flags;		/* D_* flags defined above */
-	int		active;		/* device has not been destroyed */
-	int		refcnt;		/* reference count */
-	off_t		size;		/* device size */
-	off_t		offset; /* 0 for the main drive, if we have a partition, this is the start address */
-	size_t		max_io_size;
-	void		*private_data;	/* private storage */
+    struct device *next;        /* linkage on list of all devices */
+    struct driver *driver;      /* pointer to the driver object */
+    char name[MAXDEVNAME];      /* name of device */
+    int flags;                  /* D_* flags defined above */
+    int active;                 /* device has not been destroyed */
+    int refcnt;                 /* reference count */
+    off_t size;                 /* device size */
+    off_t offset;               /* 0 for the main drive, if we have a partition, this is the start address */
+    size_t max_io_size;
+    void *private_data;         /* private storage */
 
-	void *softc;
-	void *ivars;
-	device_state_t state;
-	const char *desc;
-	int unit;
-	int irq;
-	int vector;
+    void *softc;
+    void *ivars;
+    device_state_t state;
+    const char *desc;
+    int unit;
+    int irq;
+    int vector;
 };
 
 typedef struct device *device_t;
 struct devclass {
-        device_t dev_list[DEVCLASS_MAXUNIT];
+    device_t dev_list[DEVCLASS_MAXUNIT];
 };
 typedef struct devclass *devclass_t;
 
-static inline int
-device_set_unit(device_t dev, int unit)
+static inline int device_set_unit(device_t dev, int unit)
 {
-	dev->unit = unit;
-	return 0;
+    dev->unit = unit;
+    return 0;
 }
 
-static inline int
-device_get_unit(device_t dev)
+static inline int device_get_unit(device_t dev)
 {
-	return dev->unit;
+    return dev->unit;
 }
 
-static inline const char *
-device_get_desc(device_t dev)
+static inline const char *device_get_desc(device_t dev)
 {
-	return dev->desc;
+    return dev->desc;
 }
 
-static inline void
-device_set_desc(device_t dev, const char* desc)
+static inline void device_set_desc(device_t dev, const char *desc)
 {
-	dev->desc = desc;
+    dev->desc = desc;
 }
 
-static inline void
-device_set_softc(device_t dev, void* softc)
+static inline void device_set_softc(device_t dev, void *softc)
 {
-	dev->softc = softc;
+    dev->softc = softc;
 }
 
-static inline void *
-device_get_softc(device_t dev)
+static inline void *device_get_softc(device_t dev)
 {
-	return dev->softc;
+    return dev->softc;
 }
 
 static inline void device_quiet(device_t dev)
 {
 }
 
-static inline const char *
-devtoname(struct device *dev)
+static inline const char *devtoname(struct device *dev)
 {
     return dev->name;
 }
-
-
 
 #endif /* !_DEVICE_H */

@@ -3,13 +3,18 @@
 
 #include <yaos/printk.h>
 #include <asm/pm64.h>
+#ifndef PAGE_4K_SIZE
+#define PAGE_4K_SIZE 0x1000
+#endif
+
 struct cpu_features_type cpu_features;
+
 void init_cpuid()
 {
     u32 eax = 1;
     u32 ecx = 0;
     u32 ebx, edx;
-    void bzero (void *, size_t);
+    void bzero(void *, size_t);
 
     bzero(&cpu_features, sizeof(cpu_features));
     native_cpuid(&eax, &ebx, &ecx, &edx);
@@ -82,7 +87,7 @@ void init_cpuid()
     native_cpuid(&eax, &ebx, &ecx, &edx);
     if (test_bit(0, (ulong *) & ebx)) {
         cpu_features.fsgsbase = true;
-        write_cr4(read_cr4()|cr4_fsgsbase);
+        write_cr4(read_cr4() | cr4_fsgsbase);
         printk(" fsgsbase");
     }
 
@@ -94,22 +99,25 @@ void init_cpuid()
     printk("\n");
 
 }
+
 void init_cpuid_ap()
 {
-    if(cpu_features.fsgsbase){
-        write_cr4(read_cr4()|cr4_fsgsbase);
+    if (cpu_features.fsgsbase) {
+        write_cr4(read_cr4() | cr4_fsgsbase);
     }
- 
+
 }
+
 void cprint_regs(struct trapframe *tf)
 {
     ulong rsp = tf->rbp;
     int stacknr = 0;
     ulong *p;
 
-    printk("CS:%x,DS:%x,SS:%x,apic:%d,cr3:%lx\n", read_cs(),read_ds(),read_ss(), cpuid_apic_id(), read_cr3());
+    printk("CS:%x,DS:%x,SS:%x,apic:%d,cr3:%lx\n", read_cs(), read_ds(),
+           read_ss(), cpuid_apic_id(), read_cr3());
     printk("TR:%x ", read_tr());
-    printk("RSP:%lx,RBP:%lx,RDX:%lx\n", tf,tf->rbp,tf->rdx);
+    printk("RSP:%lx,RBP:%lx,RDX:%lx\n", tf, tf->rbp, tf->rdx);
     printk("RAX:%lx,RBX:%lx,RCX:%lx\n", tf->rax, tf->rbx, tf->rcx);
     printk("RDX:%lx,RSI:%lx,RDI:%lx\n", tf->rdx, tf->rsi, tf->rdi);
     p = (ulong *) rsp;

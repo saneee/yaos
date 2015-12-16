@@ -46,10 +46,8 @@ SECTIONS
         .init.begin : {
         __init_begin = .;
         }
- __per_cpu_load = .; 
-.data..percpu  :  { __per_cpu_start = .; *(.data..percpu..first) . = ALIGN((1 << 12)); *(.data..percpu..page_aligned) . = ALIGN((1 << 6)); *(.data..percpu..read_mostly) . = ALIGN((1 << 6)); *(.data..percpu) *(.data..percpu..shared_aligned) __per_cpu_end = .; } 
- . = ALIGN((1 << 12)); .init.text : { _sinittext = .; *(.init.text) _einittext = .; }
-.init.data : {
+ . = ALIGN((1 << 12)); .init.text : AT(ADDR(.init.text)) { _sinittext = .; *(.init.text) _einittext = .; }
+.init.data : AT(ADDR(.init.data)) {
 *(.init.data)
  . = ALIGN(8); __start_mcount_loc = .; *(__mcount_loc) __stop_mcount_loc = .; *(.init.rodata) 
 . = ALIGN(8); __start_ftrace_events = .;
@@ -102,12 +100,16 @@ __con_initcall_start = .; *(.con_initcall.init) __con_initcall_end = .; __securi
 .altinstr_replacement : {
   *(.altinstr_replacement)
  }
+ . = ALIGN((1 << 12));
+
+__per_cpu_load = .;
+.data..percpu  0 : AT(__per_cpu_load) { __per_cpu_start = .; *(.data..percpu..first) . = ALIGN((1 << 12)); *(.data..percpu..page_aligned) . = ALIGN((1 << 6)); *(.data..percpu..read_mostly) . = ALIGN((1 << 6)); *(.data..percpu) *(.data..percpu..shared_aligned) __per_cpu_end = .; }
+ . = __per_cpu_load + SIZEOF(.data..percpu);
 
 
- 
  . = ALIGN((1 << 12));
  /* freed after init ends here */
- .init.end :  {
+ .init.end : AT(ADDR(.init.end)) {
   __init_end = .;
  }
 /* BSS */
@@ -115,7 +117,7 @@ __con_initcall_start = .; *(.con_initcall.init) __con_initcall_end = .; __securi
  . = ALIGN((1 << 12));
 PROVIDE(edata = .);
 
- .bss :  {
+ .bss : AT(ADDR(.bss)) {
   __bss_start = .;
   *(.bss..page_aligned)
   *(.bss)
@@ -125,7 +127,7 @@ PROVIDE(edata = .);
  PROVIDE(end = .);
 
 	/DISCARD/ : {
-		*(.eh_frame .rela.eh_frame .note.GNU-stack)
+		*(.discard .eh_frame .rela.eh_frame .note.GNU-stack)
 	}
 }
 mboot_load_end = mboot_load_addr + (edata - begin);

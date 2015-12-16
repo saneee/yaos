@@ -2,7 +2,13 @@
 #include <yaos/time.h>
 #include <asm/cpu.h>
 #include <yaos/printk.h>
-#include <yaos/string.h>
+#include <string.h>
+#include <asm/apic.h>
+#include <asm/irq_vectors.h>
+#include <yaos/init.h>
+#include <asm/irq.h>
+#include <yaos/assert.h>
+#include <yaos/sched.h>
 static void microdelay(int us)
 {
 }
@@ -23,7 +29,7 @@ static void microdelay(int us)
 #define DAY     0x07
 #define MONTH   0x08
 #define YEAR    0x09
-
+#define MAX_TIMEOUT_CALLBACK 1000
 static uint cmos_read(uint reg)
 {
     outb(reg, CMOS_PORT);
@@ -77,9 +83,44 @@ void cmostime(struct rtcdate *r)
     *r = t1;
     r->year += 2000;
 }
+
 static struct rtcdate mtime;
-void init_time()
+
+u64 msec_count = 0;
+u64 start_time_in_sec;
+static void timer_irq_handler(int n)
+{
+    void run_local_timers(void);
+
+    ack_lapic_irq();
+
+    barrier();
+    ++msec_count;
+    barrier();
+    run_local_timers();
+
+}
+
+static void timer_irq_first_handler(int n)
+{
+    ASSERT(msec_count == 0);
+    ack_lapic_irq();
+    cmostime(&mtime);
+    printk("cmos:%d-%d-%d %d:%d:%d\n", mtime.year, mtime.month, mtime.day,
+           mtime.hour, mtime.minute, mtime.second);
+
+    register_irq(TIMER_IRQ, timer_irq_handler);
+}
+
+void __init init_time()
 {
     cmostime(&mtime);
-    printk("%d-%d-%d %d:%d:%d\n",mtime.year,mtime.month,mtime.day,mtime.hour,mtime.minute,mtime.second);
+    printk("%d-%d-%d %d:%d:%d\n", mtime.year, mtime.month, mtime.day,
+           mtime.hour, mtime.minute, mtime.second);
+    start_time_in_sec =
+        mktime64(mtime.year, mtime.month, mtime.day, mtime.hour, mtime.minute,
+                 mtime.second);
+    printk("start_time_in_sec:%ld\n", start_time_in_sec);
+    register_irq(TIMER_IRQ, timer_irq_first_handler);
+
 }

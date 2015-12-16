@@ -16,21 +16,21 @@
 #ifdef CONFIG_GENERIC_BUG
 struct bug_entry {
 #ifndef CONFIG_GENERIC_BUG_RELATIVE_POINTERS
-	unsigned long	bug_addr;
+    unsigned long bug_addr;
 #else
-	signed int	bug_addr_disp;
+    signed int bug_addr_disp;
 #endif
 #ifdef CONFIG_DEBUG_BUGVERBOSE
 #ifndef CONFIG_GENERIC_BUG_RELATIVE_POINTERS
-	const char	*file;
+    const char *file;
 #else
-	signed int	file_disp;
+    signed int file_disp;
 #endif
-	unsigned short	line;
+    unsigned short line;
 #endif
-	unsigned short	flags;
+    unsigned short flags;
 };
-#endif	/* CONFIG_GENERIC_BUG */
+#endif /* CONFIG_GENERIC_BUG */
 
 /*
  * Don't use BUG() or BUG_ON() unless there's really no way out; one
@@ -62,12 +62,12 @@ struct bug_entry {
  */
 #ifndef __WARN_TAINT
 extern __printf(3, 4)
-void warn_slowpath_fmt(const char *file, const int line,
-		       const char *fmt, ...);
+void warn_slowpath_fmt(const char *file, const int line, const char *fmt, ...);
 extern __printf(4, 5)
 void warn_slowpath_fmt_taint(const char *file, const int line, unsigned taint,
-			     const char *fmt, ...);
+                             const char *fmt, ...);
 extern void warn_slowpath_null(const char *file, const int line);
+
 #define WANT_WARN_ON_SLOWPATH
 #define __WARN()		warn_slowpath_null(__FILE__, __LINE__)
 #define __WARN_printf(arg...)	warn_slowpath_fmt(__FILE__, __LINE__, arg)
@@ -193,7 +193,7 @@ extern void warn_slowpath_null(const char *file, const int line);
  * and x is true.
  */
 #ifdef CONFIG_SMP
-# define WARN_ON_SMP(x)			WARN_ON(x)
+#define WARN_ON_SMP(x)			WARN_ON(x)
 #else
 /*
  * Use of ({0;}) because WARN_ON_SMP(x) may be used either as
@@ -202,7 +202,7 @@ extern void warn_slowpath_null(const char *file, const int line);
  * A simple "0" would cause gcc to give a "statement has no effect"
  * warning.
  */
-# define WARN_ON_SMP(x)			({0;})
+#define WARN_ON_SMP(x)			({0;})
 #endif
 
 #endif /* __ASSEMBLY__ */

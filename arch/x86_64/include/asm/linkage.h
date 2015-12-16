@@ -5,7 +5,6 @@
 #undef notrace
 #define notrace __attribute__((no_instrument_function))
 
-
 #ifdef __ASSEMBLY__
 
 #define GLOBAL(name)	\
@@ -18,4 +17,3 @@
 #endif /* __ASSEMBLY__ */
 
 #endif /* _ASM_X86_LINKAGE_H */
-

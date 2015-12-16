@@ -5,7 +5,7 @@ all: yaos.img
 X64 = 1
 
 BITS = 64
-XFLAGS = -DDEBUG -std=gnu99 -m64 -DX64 -mcmodel=kernel -mtls-direct-seg-refs -mno-red-zone
+XFLAGS = -DDEBUG -std=gnu11 -m64 -DX64 -mcmodel=kernel -mtls-direct-seg-refs -mno-red-zone
 LDFLAGS = -m elf_x86_64 -nodefaultlibs  
 
 FSGSBASE=$(shell cat /proc/cpuinfo|grep fsgsbase)
@@ -35,12 +35,12 @@ KOBJ_DIR = .kobj
 OBJS := $(addprefix $(KOBJ_DIR)/,$(OBJS))
 AOBJS :=  entry64.o pm64.o main.o uart.o   vgaoutput.o  cpu.o \
 vectors.o trapasm64.o multiboot.o mmu.o pgtable.o phymem.o apic.o acpi.o \
-trap.o ioapic.o time.o pci.o irq.o lib/memset_64.o lib/memmove_64.o \
+trap.o ioapic.o time.o pci.o irq.o lib/memset_64.o lib/memmove_64.o hpet.o\
 lib/memcpy_64.o alternative.o lib/copy_page_64.o lib/clear_page_64.o \
-lib/iomap_copy_64.o
-KOBJS :=  yaos.o printk.o  kheap.o vm.o thread.o module.o yaoscall.o main.o \
-smp.o yaos_page.o dummy.o
-DOBJS := pci_device.o virtio_net.o pci_function.o virtio.o
+lib/iomap_copy_64.o 
+KOBJS :=  yaos.o printk.o  kheap.o vm.o  module.o yaoscall.o main.o \
+smp.o yaos_page.o sched.o kthread.o timer.o debug.o tasklet.o worker.o dummy.o
+DOBJS := 
 
 ifneq ($(MAKECMDGOALS),clean)
 include $(shell test -d $(ARCHOBJ_DIR) && find $(ARCHOBJ_DIR) -name '*.d')

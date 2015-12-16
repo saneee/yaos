@@ -7,10 +7,21 @@
 #include <asm/bitops.h>
 #include <yaoscall/page.h>
 #include <yaos/yaoscall.h>
+#include <yaos/kernel.h>
+#include <yaos/assert.h>
+#include <yaos/cpupm.h>
 #include "slub.h"
 #define PAGE_4K_MASK 0xfff
 #define PAGE_4K_SIZE 0x1000
+#define LARGE_IDX 15
+#define LARGE_NEXT 14
 #define ZERO_SIZE_PTR ((void *)16)
+#if 0 
+#define DEBUG_PRINT printk
+#else
+#define DEBUG_PRINT inline_printk
+#endif
+
 unsigned char *page_bits = NULL;
 
 DECLARE_MODULE(slub_mm, 0, main);
@@ -102,7 +113,8 @@ static void __init new_kmalloc_cache(int idx)
     p[idx].page = NULL;
     p[idx].idx = (uchar) idx;
     ASSERT(idx < 1 << 16);      //page_bits only 4bit 
-    printk("Name:%s,size:%d,idx:%d,%lx\n", p[idx].name, p[idx].size, idx, p);
+    DEBUG_PRINT("Name:%s,size:%d,idx:%d,%lx\n", p[idx].name, p[idx].size, idx,
+                p);
 }
 
 static void __init create_kmalloc_caches()
@@ -122,6 +134,8 @@ static void __init create_kmalloc_caches()
         if (KMALLOC_MIN_SIZE <= 64 && i == 7)
             new_kmalloc_cache(2);
     }
+    new_kmalloc_cache(LARGE_IDX);
+    new_kmalloc_cache(LARGE_NEXT);
 }
 
 /* Loop over all objects in a slab */
@@ -150,11 +164,12 @@ struct kmem_cache *get_cache_from_addr(void *addr)
     uchar idx;
 
     if (offset & 1) {
-        idx = page_bits[offset / 2] >> 4;
+        idx = (page_bits[offset / 2] >> 4) & 0xf;
     }
     else {
         idx = page_bits[offset / 2] & 0xf;
     }
+    printk("idx:%d\n", idx);
     return PERCPU_PTR(&kmalloc_caches[idx]);
 
 }
@@ -165,7 +180,28 @@ static void __kmfree(void *p)
         return;
     struct kmem_cache *s = get_cache_from_addr(p);
 
-    printk("kmfree:%lx,s:%lx,%s\n", p, s, s->name);
+    if (s->idx == LARGE_IDX) {
+        size_t size = 0;
+        uchar idx = 0;
+        ulong offset = (ulong) (p) >> PAGE_4K_SHIFT;
+
+        do {
+            size += PAGE_4K_SIZE;
+            offset++;
+
+            if (offset & 1) {
+                idx = (page_bits[offset / 2] >> 4) & 0xf;
+            }
+            else {
+                idx = page_bits[offset / 2] & 0xf;
+            }
+
+        } while (idx == LARGE_NEXT);
+        DEBUG_PRINT("kmfree_large:%lx,size:%lx\n", p, size);
+        yaos_heap_free_4k(p, size);
+        return;
+    }
+    DEBUG_PRINT("kmfree:%lx No:%d,s:%lx,%s\n", p, s->idx, s, s->name);
     struct freelink *pfree = (struct freelink *)p;
 
     pfree->pnext = s->freehead;
@@ -177,7 +213,8 @@ static bool slub_add_page(struct kmem_cache *s)
 {
     void *addr = yaos_heap_alloc_4k(PAGE_4K_SIZE);
 
-    printk("s:%lx add page:%lx,size:%lx\n", s, addr, s->size);
+    DEBUG_PRINT("s:%lx No.%d add page:%lx,size:%lx\n", s, s->idx, addr,
+                s->size);
     if (!addr)
         return false;
     struct freelink *pfree = (struct freelink *)addr;
@@ -210,6 +247,7 @@ static void *__kmalloc(size_t size)
 {
     struct kmem_cache *s = kmalloc_slab(size);
 
+    DEBUG_PRINT("__kmalloc:0x%lx,%lx:%d\n", size, s, s->idx);
     if (s == ZERO_SIZE_PTR) {
         return ZERO_SIZE_PTR;
     }
@@ -228,6 +266,46 @@ static void *__kmalloc(size_t size)
     return pfree;
 }
 
+static void *__kmalloc_large(size_t size)
+{
+
+    size_t newsize = (size + PAGE_4K_MASK) & ~PAGE_4K_MASK;
+
+    DEBUG_PRINT("__kmalloc_large:0x%lx,%lx\n", size, newsize);
+    ulong addr = (ulong) yaos_heap_alloc_4k(newsize);
+
+    if (!addr) {
+        DEBUG_PRINT("yaos_heap_alloc_4k return error %s,%d\n", __func__,
+                    __LINE__);
+        return NULL;
+    }
+    ulong offset = (ulong) addr >> PAGE_4K_SHIFT;
+
+    /* set first page */
+    if (offset & 1) {
+        page_bits[offset / 2] |= LARGE_IDX << 4;
+    }
+    else {
+        page_bits[offset / 2] |= LARGE_IDX;
+    }
+    offset++;
+    /* set all page */
+    while (offset < (addr + newsize) >> PAGE_4K_SHIFT) {
+        if (offset & 1) {
+            page_bits[offset / 2] |= LARGE_NEXT << 4;
+        }
+        else {
+            page_bits[offset / 2] |= LARGE_NEXT;
+        }
+        offset++;
+
+    }
+    DEBUG_PRINT("alloc_large page offset:0x%x,0x%x\n",
+                (ulong) addr >> PAGE_4K_SHIFT, offset);
+    BUILD_BUG_ON(LARGE_IDX > 15);	//4bit only
+    return (void *)addr;
+}
+
 static ret_t slub_mfree(void *p)
 {
     __kmfree(p);
@@ -237,7 +315,14 @@ static ret_t slub_mfree(void *p)
 
 static ret_t slub_malloc(size_t size)
 {
-    void *addr = __kmalloc(size);
+    void *addr;
+
+    if (size > KMALLOC_MAX_CACHE_SIZE) {
+        addr = __kmalloc_large(size);
+    }
+    else {
+        addr = __kmalloc(size);
+    }
     ret_t ret;
 
     ret.v = (ulong) addr;
@@ -252,8 +337,8 @@ __init static void init_slub_bp()
 
     size /= 2;                  //4bit one 4k page
     size++;
+    size += PAGE_4K_SIZE - 1;
     size &= ~PAGE_4K_MASK;
-    size += PAGE_4K_SIZE;
     page_bits = yaos_heap_alloc_4k(size);
     memset(page_bits, 0, size);
 
@@ -277,11 +362,12 @@ static int main(module_t m, ulong t, void *arg)
         regist_yaoscall(YAOS_malloc, slub_malloc);
         regist_yaoscall(YAOS_mfree, slub_mfree);
 
-        printk("slub_mm, %lx,%lx,%lx\n", m, t, arg);
+        DEBUG_PRINT("slub_mm, %lx,%lx,%lx,MAX_CACHE:%lx,MAX:%lx\n", m, t, arg,
+                    KMALLOC_MAX_CACHE_SIZE, KMALLOC_MAX_SIZE);
     }
     else if (env == MOD_APLOAD) {
-        printk("slub_mm,ap load\n");
-        if (!is_bp()) {//bp already done in bpload
+        DEBUG_PRINT("slub_mm,ap load\n");
+        if (!is_bp()) {         //bp already done in bpload
             init_slub_ap();
         }
     }

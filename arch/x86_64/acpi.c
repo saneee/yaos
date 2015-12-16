@@ -1,7 +1,7 @@
 #include <asm/acpi.h>
 #include <asm/pgtable.h>
 #include <yaos/printk.h>
-#include <yaos/string.h>
+#include <string.h>
 #include <asm/cpu.h>
 #include <asm/apic.h>
 extern u32 *lapic_base;
@@ -100,7 +100,7 @@ static int acpi_config_smp(struct acpi_madt *madt)
     if (nr_cpu) {
         ismp = 1;
         lapic_base = (u32 *) IO2V(((uintp) lapic_addr));
-        printk("lapic:%lx,%lx\n", (ulong) lapic_base,lapic_read_base());
+        printk("lapic:%lx,%lx\n", (ulong) lapic_base, lapic_read_base());
         return 0;
     }
 

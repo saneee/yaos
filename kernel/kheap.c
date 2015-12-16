@@ -25,8 +25,8 @@ static struct kheap_t *pfree4k;
 static struct kheap_t *phead4k;
 static struct kheap_t heap_holes[MAX_HEAP_HOLE];
 static struct kheap_t heap_small_holes[MAX_SMALL_HOLE];
-__thread static spinlock_t spin_4k;
-__thread static spinlock_t spin_small;
+static spinlock_t spin_4k;
+static spinlock_t spin_small;
 static struct kheap_t *pfree_small;
 static struct kheap_t *phead_small;
 void init_kheap()

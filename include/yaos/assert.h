@@ -23,6 +23,6 @@ do {                                                                    \
 #else
 #define ASSERT(x) do { } while (0)
 
-#endif/*DEBUG*/
+#endif /*DEBUG*/
 extern void panic(const char *fmt, ...);
 #endif

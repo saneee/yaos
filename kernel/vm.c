@@ -24,7 +24,7 @@ struct linear_t {
 static struct linear_t *pfreeh;
 static struct linear_t *phead;
 static struct linear_t linear_holes[MAX_LINEAR_HOLE];
-__thread static spinlock_t spin_vm;
+static spinlock_t spin_vm;
 
 void free_linear(ulong addr, ulong size)
 {

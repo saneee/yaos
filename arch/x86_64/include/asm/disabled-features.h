@@ -11,15 +11,15 @@
  */
 
 #ifdef CONFIG_X86_INTEL_MPX
-# define DISABLE_MPX	0
+#define DISABLE_MPX	0
 #else
-# define DISABLE_MPX	(1<<(X86_FEATURE_MPX & 31))
+#define DISABLE_MPX	(1<<(X86_FEATURE_MPX & 31))
 #endif
 
-# define DISABLE_VME		(1<<(X86_FEATURE_VME & 31))
-# define DISABLE_K6_MTRR	(1<<(X86_FEATURE_K6_MTRR & 31))
-# define DISABLE_CYRIX_ARR	(1<<(X86_FEATURE_CYRIX_ARR & 31))
-# define DISABLE_CENTAUR_MCR	(1<<(X86_FEATURE_CENTAUR_MCR & 31))
+#define DISABLE_VME		(1<<(X86_FEATURE_VME & 31))
+#define DISABLE_K6_MTRR	(1<<(X86_FEATURE_K6_MTRR & 31))
+#define DISABLE_CYRIX_ARR	(1<<(X86_FEATURE_CYRIX_ARR & 31))
+#define DISABLE_CENTAUR_MCR	(1<<(X86_FEATURE_CENTAUR_MCR & 31))
 
 /*
  * Make sure to add features to the correct mask

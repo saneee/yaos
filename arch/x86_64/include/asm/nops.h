@@ -107,7 +107,7 @@
 #define NOP_ATOMIC5 (ASM_NOP_MAX+1)	/* Entry for the 5-byte atomic NOP */
 
 #ifndef __ASSEMBLY__
-extern const unsigned char * const *ideal_nops;
+extern const unsigned char *const *ideal_nops;
 extern void arch_init_ideal_nops(void);
 #endif
 

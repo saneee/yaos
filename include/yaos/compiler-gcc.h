@@ -125,19 +125,19 @@
 /* gcc version specific checks */
 
 #if GCC_VERSION < 30200
-# error Sorry, your compiler is too old - please upgrade it.
+#error Sorry, your compiler is too old - please upgrade it.
 #endif
 
 #if GCC_VERSION < 30300
-# define __used			__attribute__((__unused__))
+#define __used			__attribute__((__unused__))
 #else
-# define __used			__attribute__((__used__))
+#define __used			__attribute__((__used__))
 #endif
 
 #ifdef CONFIG_GCOV_KERNEL
-# if GCC_VERSION < 30400
-#   error "GCOV profiling support for gcc versions below 3.4 not included"
-# endif /* __GNUC_MINOR__ */
+#if GCC_VERSION < 30400
+#error "GCOV profiling support for gcc versions below 3.4 not included"
+#endif /* __GNUC_MINOR__ */
 #endif /* CONFIG_GCOV_KERNEL */
 
 #if GCC_VERSION >= 30400
@@ -148,9 +148,9 @@
 
 /* GCC 4.1.[01] miscompiles __weak */
 #ifdef __KERNEL__
-# if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
-#  error Your version of gcc miscompiles the __weak directive
-# endif
+#if GCC_VERSION >= 40100 &&  GCC_VERSION <= 40101
+#error Your version of gcc miscompiles the __weak directive
+#endif
 #endif
 
 #define __used			__attribute__((__used__))
@@ -158,7 +158,7 @@
 	__builtin_offsetof(a, b)
 
 #if GCC_VERSION >= 40100 && GCC_VERSION < 40600
-# define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
+#define __compiletime_object_size(obj) __builtin_object_size(obj, 0)
 #endif
 
 #if GCC_VERSION >= 40300
@@ -181,8 +181,8 @@
 #define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
 
 #ifndef __CHECKER__
-# define __compiletime_warning(message) __attribute__((warning(message)))
-# define __compiletime_error(message) __attribute__((error(message)))
+#define __compiletime_warning(message) __attribute__((warning(message)))
+#define __compiletime_error(message) __attribute__((error(message)))
 #endif /* __CHECKER__ */
 #endif /* GCC_VERSION >= 40300 */
 
@@ -237,10 +237,10 @@
 #define KASAN_ABI_VERSION 3
 #endif
 
-#endif	/* gcc version >= 40000 specific checks */
+#endif /* gcc version >= 40000 specific checks */
 
 #if !defined(__noclone)
-#define __noclone	/* not needed */
+#define __noclone               /* not needed */
 #endif
 
 /*

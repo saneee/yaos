@@ -9,4 +9,4 @@
 #define __stringify_1(x...)	#x
 #define __stringify(x...)	__stringify_1(x)
 
-#endif	/* !_YAOS_STRINGIFY_H */
+#endif /* !_YAOS_STRINGIFY_H */

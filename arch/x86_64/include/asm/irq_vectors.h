@@ -1,7 +1,6 @@
 #ifndef _ASM_X86_IRQ_VECTORS_H
 #define _ASM_X86_IRQ_VECTORS_H
 
-
 #define NMI_VECTOR			0x02
 #define MCE_VECTOR			0x12
 
@@ -45,7 +44,7 @@
  * Sanity check
  */
 #if ((SPURIOUS_APIC_VECTOR & 0x0F) != 0x0F)
-# error SPURIOUS_APIC_VECTOR definition error
+#error SPURIOUS_APIC_VECTOR definition error
 #endif
 
 #define ERROR_APIC_VECTOR		0xfe
@@ -101,7 +100,7 @@
 #ifndef __ASSEMBLY__
 static inline int invalid_vm86_irq(int irq)
 {
-	return irq < FIRST_VM86_IRQ || irq > LAST_VM86_IRQ;
+    return irq < FIRST_VM86_IRQ || irq > LAST_VM86_IRQ;
 }
 #endif
 

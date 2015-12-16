@@ -54,6 +54,7 @@ size_t strlen (const char *);
 
 char *strerror (int);
 
+extern size_t strnlen(const char *,size_t);
 
 #if defined(_POSIX_SOURCE) || defined(_POSIX_C_SOURCE) \
  || defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) \

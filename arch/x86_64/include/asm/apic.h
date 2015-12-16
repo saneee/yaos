@@ -5,7 +5,6 @@
 #include <asm/msrdef.h>
 #include <yaos/types.h>
 struct msi_message {
- u64 _test;
     u64 addr;
     u32 data;
 };
@@ -44,7 +43,7 @@ static inline void lapic_nmi_allbutself(unsigned vector)
     return p_apic_func->nmi_allbutself(vector);
 }
 
-static inline void lapic_eio()
+static inline void lapic_eoi()
 {
     return p_apic_func->eio();
 }
@@ -78,9 +77,37 @@ static inline u64 lapic_read_base()
 {
     return rdmsr(MSR_IA32_APICBASE) & 0xFFFFFF000;
 }
-static inline u32 lapic_delivery(u32 mode) 
-{ 
-    return mode << DELIVERY_SHIFT; 
+
+static inline u32 lapic_delivery(u32 mode)
+{
+    return mode << DELIVERY_SHIFT;
 }
-extern void ioapic_enable(int irq,u32 apicid);
+
+static inline void mask_lapic_irq()
+{
+    unsigned long v;
+
+    v = lapic_read(APIC_LVT0);
+    lapic_write(APIC_LVT0, v | APIC_LVT_MASKED);
+}
+
+static inline void unmask_lapic_irq()
+{
+    unsigned long v;
+
+    v = lapic_read(APIC_LVT0);
+    lapic_write(APIC_LVT0, v & ~APIC_LVT_MASKED);
+}
+
+static inline void ack_lapic_irq(void)
+{
+    /*
+     * ack_APIC_irq() actually gets compiled as a single instruction
+     * ... yummie.
+     */
+    lapic_eoi();
+}
+
+extern void ioapic_enable(int irq, u32 apicid);
+extern struct msi_message apic_compose_msix(u8 vector, u8 dest_id);
 #endif

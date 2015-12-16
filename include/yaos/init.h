@@ -82,7 +82,6 @@
 #define __initdata_refok __refdata
 #define __exit_refok     __ref
 
-
 #ifdef MODULE
 #define __exitused
 #else
@@ -121,17 +120,17 @@
 /*
  * Used for initialization calls..
  */
-typedef int (*initcall_t)(bool isbp);
-typedef void (*exitcall_t)(void);
+typedef int (*initcall_t) (bool isbp);
+typedef void (*exitcall_t) (void);
 
 extern initcall_t __con_initcall_start[], __con_initcall_end[];
 extern initcall_t __security_initcall_start[], __security_initcall_end[];
 
 /* Used for contructor calls. */
-typedef void (*ctor_fn_t)(void);
+typedef void (*ctor_fn_t) (void);
 
 /* Defined in init/main.c */
-extern int do_one_initcall(initcall_t fn,bool isbp);
+extern int do_one_initcall(initcall_t fn, bool isbp);
 extern char __initdata boot_command_line[];
 extern char *saved_command_line;
 extern unsigned int reset_devices;
@@ -142,12 +141,12 @@ void prepare_namespace(void);
 void __init load_default_modules(void);
 int __init init_rootfs(void);
 
-extern void (*late_time_init)(void);
+extern void (*late_time_init) (void);
 
 extern bool initcall_debug;
 
 #endif
-  
+
 #ifndef MODULE
 
 #ifndef __ASSEMBLY__
@@ -184,15 +183,12 @@ extern bool initcall_debug;
 	__attribute__((__section__(".initcall" #id ".init"))) = fn; \
 	LTO_REFERENCE_INITCALL(__initcall_##fn##id)
 
-
-
 /*
  * Early initcalls run before initializing SMP.
  *
  * Only for built-in code, not modules.
  */
 #define early_initcall(fn)		__define_initcall(fn, early)
-
 
 /*
  * A "pure" initcall has no dependencies on anything else, and purely
@@ -233,9 +229,9 @@ extern bool initcall_debug;
 	__used __section(.security_initcall.init) = fn
 
 struct obs_kernel_param {
-	const char *str;
-	int (*setup_func)(bool isbp);
-	int early;
+    const char *str;
+    int (*setup_func) (bool isbp);
+    int early;
 };
 
 /*
@@ -288,7 +284,7 @@ void __init parse_early_options(char *cmdline);
 #else /* MODULE */
 
 #define __setup_param(str, unique_id, fn)	/* nothing */
-#define __setup(str, func) 			/* nothing */
+#define __setup(str, func)      /* nothing */
 #endif
 
 /* Data marked not to be saved by software suspend */

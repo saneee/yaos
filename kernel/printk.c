@@ -1,6 +1,6 @@
 #include <types.h>
 #include <vargs.h>
-#include <yaos/string.h>
+#include <string.h>
 #include <asm/cpu.h>
 static inline int isdigit(int ch)
 {
@@ -352,5 +352,6 @@ void panic(const char *fmt, ...)
     vsprintf(printf_buf, fmt, args);
     va_end(args);
     vga_puts(printf_buf);
+    print_regs();
     cli_hlt();
 }

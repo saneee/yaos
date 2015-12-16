@@ -3,5 +3,4 @@
 #define EXPORT_SYMBOL(sym)                            \
         extern typeof(sym) sym;
 
-
 #endif

@@ -26,7 +26,7 @@ struct ioapic_t {
 };
 
 volatile struct ioapic_t *ioapic;
-extern uchar ioapicid;//acip.c
+extern uchar ioapicid;          //acip.c
 
 uint ioapic_read(int reg)
 {
@@ -43,13 +43,13 @@ static void ioapic_write(int reg, uint data)
 void init_ioapic(void)
 {
     int i, id, maxintr;
-    
-    outb(0xff,0x21);//mask 8259 irq
-    outb(0xff,0xa1);//mask 8259 slave irq,use ioapic 
+
+    outb(0xff, 0x21);           //mask 8259 irq
+    outb(0xff, 0xa1);           //mask 8259 slave irq,use ioapic 
 
     ioapic = (volatile struct ioapic_t *)IO2V(IOAPIC);
     maxintr = (ioapic_read(REG_VER) >> 16) & 0xFF;
-printk("maxintr:%d\n",maxintr);
+    printk("maxintr:%d\n", maxintr);
     id = ioapic_read(REG_ID) >> 24;
     if (id != ioapicid)
         printk("ioapicinit: id isn't equal to ioapicid; not a MP\n");

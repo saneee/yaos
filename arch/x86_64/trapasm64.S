@@ -1,4 +1,4 @@
-
+#include <asm/percpu.h>
   # vectors.S sends all traps here.
 .globl alltraps
 alltraps:
@@ -48,10 +48,17 @@ trapret:
   iretq
 .global switchtrap
 switchtrap:
+  cld
   push %r15
   mov  %rsp,%r15
+  incl    PER_CPU_VAR(irq_count)
+  jnz 1f
+  movq   PER_CPU_VAR(irq_stack_ptr), %rsp
+  jmp 2f
+1:
   mov  48(%r15),%rsp
   sub  $136,%rsp
+2:
   push 56(%r15) #ss
   push 48(%r15) #rsp 
   push 40(%r15) #flag 
@@ -77,9 +84,13 @@ switchtrap:
   mov  %rsp, %rdi  # frame in arg1
   movq    120(%rdi), %rax
   movq    c_vectors(,%rax,8),%rax
-  call *%rax
 
+  call *%rax
+.global switchtrapret
 switchtrapret:
+  cli
+  decl    PER_CPU_VAR(irq_count)
+
   pop %rax
   pop %rbx
   pop %rcx
@@ -97,3 +108,15 @@ switchtrapret:
   pop %r15
   add $16,%rsp
   iretq   
+.global do_softirq_own_stack
+do_softirq_own_stack:
+  pushq   %rbp
+  mov     %rsp, %rbp
+  incl    PER_CPU_VAR(irq_count)
+  cmove   PER_CPU_VAR(irq_stack_ptr), %rsp
+  push    %rbp                            /* frame pointer backlink */
+  call    __do_softirq
+  leaveq
+  decl    PER_CPU_VAR(irq_count)
+  ret
+

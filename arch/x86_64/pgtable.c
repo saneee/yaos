@@ -7,6 +7,7 @@
 #include <yaos/kheap.h>
 #include <asm/pm64.h>
 #include <yaos/init.h>
+#include <yaos/assert.h>
 #if 1
 #define DEBUG_PRINT printk
 #else
@@ -44,7 +45,7 @@ static void init_pml4()
     ASSERT((((ulong) & first_pd) & 0xfff) == 0);
 
     //init first 4G 4*512*2M
-    pml4.pml4e[0] = ((ulong) & first_pdp) | PTE_P | PTE_W; 
+    pml4.pml4e[0] = ((ulong) & first_pdp) | PTE_P | PTE_W;
     first_pdp.pdpte[0] = ((ulong) & first_pd) | PTE_P | PTE_W;
     first_pdp.pdpte[1] = ((ulong) & second_pd) | PTE_P | PTE_W;
 
@@ -72,7 +73,7 @@ static void init_pml4()
         }
     }
     write_cr3((ulong) & pml4);
-    bp_cr3=read_cr3();
+    bp_cr3 = read_cr3();
 }
 
 u64 get_pte_with_addr(u64 addr)
@@ -140,24 +141,28 @@ int map_page_p2v(ulong paddr, ulong vaddr, ulong flag)
 //    DEBUG_PRINT("map phy:%lx to vaddr:%lx,pte:%lx,%d,%d,%d\n",paddr,vaddr,&pd[k],i,j,k);
     return OK;
 }
-void *ioremap_nocache(ulong addr,ulong size)
+
+void *ioremap_nocache(ulong addr, ulong size)
 {
-    ulong paddr=addr&~(PAGE_SIZE-1);
-    size+=addr-paddr;
-    for(ulong added=0;added<=size;added+=PAGE_SIZE){
- map_page_p2v(paddr, paddr + IO_MEM_BASE,
-                             PTE_P | PTE_W | PTE_PWT | PTE_PCD | PTE_PS);
-        paddr+=PAGE_SIZE;
+    ulong paddr = addr & ~(PAGE_SIZE - 1);
+
+    size += addr - paddr;
+    for (ulong added = 0; added <= size; added += PAGE_SIZE) {
+        map_page_p2v(paddr, paddr + IO_MEM_BASE,
+                     PTE_P | PTE_W | PTE_PWT | PTE_PCD | PTE_PS);
+        paddr += PAGE_SIZE;
     }
-    return (void *)(addr+IO_MEM_BASE);
+    return (void *)(addr + IO_MEM_BASE);
 }
+
 void init_pgtable()
 {
     init_pml4();
 
 }
+
 void init_pgtable_ap()
 {
-     write_cr3((ulong) & pml4);
+    write_cr3((ulong) & pml4);
 
 }

@@ -1,8 +1,6 @@
 #ifndef _ASM_X86_HPET_H
 #define _ASM_X86_HPET_H
 
-
-
 #define HPET_MMAP_SIZE		1024
 
 #define HPET_ID			0x000

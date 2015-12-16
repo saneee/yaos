@@ -1,19 +1,19 @@
 #ifndef _ASM_X86_ALTERNATIVE_H
 #define _ASM_X86_ALTERNATIVE_H
-
 #include <yaos/types.h>
 #include <asm/asm.h>
+#include <yaos/compiler.h>
 #ifndef LOCK_PREFIX
 #define LOCK_PREFIX  "\n\tlock; "
 #endif
 
 struct alt_instr {
-	s32 instr_offset;	/* original instruction */
-	s32 repl_offset;	/* offset to replacement instruction */
-	u16 cpuid;		/* cpuid bit set for replacement */
-	u8  instrlen;		/* length of original instruction */
-	u8  replacementlen;	/* length of new instruction */
-	u32  padlen;		/* length of build-time padding */
+    s32 instr_offset;           /* original instruction */
+    s32 repl_offset;            /* offset to replacement instruction */
+    u16 cpuid;                  /* cpuid bit set for replacement */
+    u8 instrlen;                /* length of original instruction */
+    u8 replacementlen;          /* length of new instruction */
+    u32 padlen;                 /* length of build-time padding */
 } __packed;
 
 /*
@@ -26,7 +26,6 @@ extern void alternative_instructions(void);
 extern void apply_alternatives(struct alt_instr *start, struct alt_instr *end);
 
 struct module;
-
 
 #define b_replacement(num)	"664"#num
 #define e_replacement(num)	"665"#num
@@ -70,7 +69,7 @@ struct module;
 	" .word " __stringify(feature) "\n"		/* feature bit     */ \
 	" .byte " alt_total_slen "\n"			/* source len      */ \
 	" .byte " alt_rlen(num) "\n"			/* replacement len */ \
-	" .byte " alt_pad_len "\n"			/* pad len */
+	" .byte " alt_pad_len "\n"	/* pad len */
 
 #define ALTINSTR_REPLACEMENT(newinstr, feature, num)	/* replacement */     \
 	b_replacement(num)":\n\t" newinstr "\n" e_replacement(num) ":\n\t"
@@ -184,7 +183,6 @@ struct module;
  */
 #define ASM_NO_INPUT_CLOBBER(clbr...) "i" (0) : clbr
 
-
 extern void *text_poke_early(void *addr, const void *opcode, size_t len);
 
 /*
@@ -202,6 +200,7 @@ extern void *text_poke_early(void *addr, const void *opcode, size_t len);
  * inconsistent instruction while you patch.
  */
 extern void *text_poke(void *addr, const void *opcode, size_t len);
-extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
+extern void *text_poke_bp(void *addr, const void *opcode, size_t len,
+                          void *handler);
 
 #endif /* _ASM_X86_ALTERNATIVE_H */

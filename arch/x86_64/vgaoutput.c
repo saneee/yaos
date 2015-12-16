@@ -1,6 +1,7 @@
 #include <asm/cpu.h>
 #include <yaos/types.h>
 #include <yaos/spinlock.h>
+#include <yaos/irq.h>
 #define VGABASE         ((const char *)0xb8000)
 void uart_putc(int);
 
@@ -16,7 +17,7 @@ static inline unsigned short readw(const char *addr)
 
 static int max_ypos = 25, max_xpos = 80;
 static int current_ypos = 0, current_xpos = 0;
-spinlock_t spin_vga=0;
+spinlock_t spin_vga = 0;
 void vga_puts_color(u8 back, u8 fore, const char *str)
 {
     uint8_t back_color = (uint8_t) back;
@@ -26,7 +27,10 @@ void vga_puts_color(u8 back, u8 fore, const char *str)
 
     char c;
     int i, k, j;
+    unsigned long flag = local_irq_save();
+
     spin_lock(&spin_vga);
+
     while ((c = *str++) != '\0') {
         uart_putc(c);
         if (current_ypos > max_ypos) {
@@ -56,6 +60,7 @@ void vga_puts_color(u8 back, u8 fore, const char *str)
 
     }
     spin_unlock(&spin_vga);
+    local_irq_restore(flag);
 }
 
 void vga_puts(const char *str)

@@ -10,8 +10,8 @@
 #include <asm/cpu.h>
 #include <yaos/init.h>
 #include <yaos/cpupm.h>
-#define IOAPIC_BASE  0xFEC00000      // Default physical address of IO APIC
-
+#include <yaos/assert.h>
+#define IOAPIC_BASE  0xFEC00000 // Default physical address of IO APIC
 
 #define MAX_IO_REMAPS 2000
 #if 1
@@ -58,12 +58,11 @@ struct multiboot_info_type {
 extern void uart_early_init();
 ulong __kernel_start;
 ulong __kernel_end;
-extern char __per_cpu_start[],__per_cpu_end[];
+extern char __per_cpu_start[], __per_cpu_end[];
+extern char __per_cpu_load[];
 ulong __max_phy_addr;           //include io memory addr
 ulong __max_phy_mem_addr;       //only useable memory
 ulong __max_linear_addr;
-ulong __percpu_size;
-ulong __percpu_start;
 
 void init_bss()
 {
@@ -72,12 +71,12 @@ void init_bss()
 
     ptr = (struct mboot_info *)0x100000;
     __kernel_end = ptr->mboot_bss_end;
-    __percpu_size = (ulong) (__per_cpu_end - __per_cpu_start);
-    __percpu_start = (ulong) __per_cpu_start;
     free_kheap_4k(__kernel_end, init_heap_size);
     __kernel_end += init_heap_size;
     __kernel_start = 0x100000;  //1M
-printk("kstart:%lx,kend:%lx,pcpu:%lx,pcpuend:%lx\n",__kernel_start,__kernel_end,__percpu_start,__percpu_start+__percpu_size);
+    printk("kstart:%lx,kend:%lx,pcpu:%lx,pcpuend:%lx,percpu_load:%lx\n",
+           __kernel_start, __kernel_end, __per_cpu_start, __per_cpu_end,
+           __per_cpu_load);
 }
 
 #define CHECK_FLAG(flags,bit)   ((flags) & (1 << (bit)))
@@ -130,10 +129,10 @@ static void remap_iomem(void)
             //do not cache io memory 
             if (OK !=
                 map_page_p2v(pg * PAGE_SIZE, pg * PAGE_SIZE + IO_MEM_BASE,
-                             PTE_P | PTE_W | PTE_PWT | PTE_PCD | PTE_PS)){
-                panic("No memory when map page %lx\n",pg*PAGE_SIZE);
-}
-printk("remap:IO:%lx\n",pg*PAGE_SIZE);
+                             PTE_P | PTE_W | PTE_PWT | PTE_PCD | PTE_PS)) {
+                panic("No memory when map page %lx\n", pg * PAGE_SIZE);
+            }
+            printk("remap:IO:%lx\n", pg * PAGE_SIZE);
         }
     }
 }
@@ -197,7 +196,8 @@ static void on_iomem(u64, u64);
 static void deal_reverse(u64 addr, u64 size, bool ismem)
 {
     extern struct cpu the_cpu;
-    the_cpu.arch_cpu.rsp=read_rsp();
+
+    the_cpu.arch_cpu.rsp = read_rsp();
     if (addr > max_reverse_addr) {
         if (ismem)
             on_mem(addr, size);
@@ -324,7 +324,7 @@ void init_e820()
 
     add_reverse(0, reverse_low_size);
     add_reverse(__kernel_start, __kernel_end - __kernel_start);
-    add_map(IOAPIC_BASE/PAGE_SIZE+1);//map ioapic
+    add_map(IOAPIC_BASE / PAGE_SIZE + 1);	//map ioapic
 
     for (mmap = (memory_map_t *) pe820;
          (unsigned long)mmap < (ulong) pe820 + e820map_size;
@@ -420,7 +420,8 @@ void init_bootload(u32 info_addr, u32 magic)
     int i;
     struct multiboot_info_type *mbi;
     ulong addr = (ulong) info_addr;
-print_regs();
+
+    print_regs();
     mbi = (struct multiboot_info_type *)addr;
     if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
         printk("bootload magic do not match %x,%x\n", magic,
@@ -522,8 +523,8 @@ print_regs();
         }
         __max_phy_addr = maxaddr;
         __max_phy_mem_addr = maxmemaddr;
-        printk("max_phy_addr:%lx,%lx\n", __max_phy_addr,read_rsp());
-print_regs();
+        printk("max_phy_addr:%lx,%lx\n", __max_phy_addr, read_rsp());
+        print_regs();
     }
     else {
         printk("no E820 mmap found\n");

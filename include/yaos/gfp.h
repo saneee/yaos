@@ -44,7 +44,7 @@ struct vm_area_struct;
 #define __GFP_DMA	((__force gfp_t)___GFP_DMA)
 #define __GFP_HIGHMEM	((__force gfp_t)___GFP_HIGHMEM)
 #define __GFP_DMA32	((__force gfp_t)___GFP_DMA32)
-#define __GFP_MOVABLE	((__force gfp_t)___GFP_MOVABLE)  /* Page is movable */
+#define __GFP_MOVABLE	((__force gfp_t)___GFP_MOVABLE)	/* Page is movable */
 #define GFP_ZONEMASK	(__GFP_DMA|__GFP_HIGHMEM|__GFP_DMA32|__GFP_MOVABLE)
 /*
  * Action modifiers - doesn't change the zoning
@@ -71,23 +71,23 @@ struct vm_area_struct;
 #define __GFP_NOWARN	((__force gfp_t)___GFP_NOWARN)	/* Suppress page allocation failure warning */
 #define __GFP_REPEAT	((__force gfp_t)___GFP_REPEAT)	/* See above */
 #define __GFP_NOFAIL	((__force gfp_t)___GFP_NOFAIL)	/* See above */
-#define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY) /* See above */
-#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)/* Allow access to emergency reserves */
+#define __GFP_NORETRY	((__force gfp_t)___GFP_NORETRY)	/* See above */
+#define __GFP_MEMALLOC	((__force gfp_t)___GFP_MEMALLOC)	/* Allow access to emergency reserves */
 #define __GFP_COMP	((__force gfp_t)___GFP_COMP)	/* Add compound page metadata */
 #define __GFP_ZERO	((__force gfp_t)___GFP_ZERO)	/* Return zeroed page on success */
-#define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC) /* Don't use emergency reserves.
-							 * This takes precedence over the
-							 * __GFP_MEMALLOC flag if both are
-							 * set
-							 */
-#define __GFP_HARDWALL   ((__force gfp_t)___GFP_HARDWALL) /* Enforce hardwall cpuset memory allocs */
-#define __GFP_THISNODE	((__force gfp_t)___GFP_THISNODE)/* No fallback, no policies */
-#define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
-#define __GFP_NOACCOUNT	((__force gfp_t)___GFP_NOACCOUNT) /* Don't account to kmemcg */
-#define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)  /* Don't track with kmemcheck */
+#define __GFP_NOMEMALLOC ((__force gfp_t)___GFP_NOMEMALLOC)	/* Don't use emergency reserves.
+		 * This takes precedence over the
+		 * __GFP_MEMALLOC flag if both are
+		 * set
+		 */
+#define __GFP_HARDWALL   ((__force gfp_t)___GFP_HARDWALL)	/* Enforce hardwall cpuset memory allocs */
+#define __GFP_THISNODE	((__force gfp_t)___GFP_THISNODE)	/* No fallback, no policies */
+#define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE)	/* Page is reclaimable */
+#define __GFP_NOACCOUNT	((__force gfp_t)___GFP_NOACCOUNT)	/* Don't account to kmemcg */
+#define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)	/* Don't track with kmemcheck */
 
 #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
-#define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
+#define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE)	/* On behalf of other node */
 #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)	/* Allocator intends to dirty page */
 
 /*
@@ -96,7 +96,7 @@ struct vm_area_struct;
  */
 #define __GFP_NOTRACK_FALSE_POSITIVE (__GFP_NOTRACK)
 
-#define __GFP_BITS_SHIFT 25	/* Room for N __GFP_FOO bits */
+#define __GFP_BITS_SHIFT 25     /* Room for N __GFP_FOO bits */
 #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
 
 /* This equals 0, but use constants in case they ever change */
@@ -140,7 +140,6 @@ struct vm_area_struct;
 
 /* 4GB DMA on some platforms */
 #define GFP_DMA32	__GFP_DMA32
-
 
 #ifdef CONFIG_HIGHMEM
 #define OPT_ZONE_HIGHMEM ZONE_HIGHMEM
@@ -193,10 +192,6 @@ struct vm_area_struct;
  * ZONES_SHIFT must be <= 2 on 32 bit platforms.
  */
 
-#if 16 * ZONES_SHIFT > BITS_PER_LONG
-#error ZONES_SHIFT too large to create GFP_ZONE_TABLE integer
-#endif
-
 #define GFP_ZONE_TABLE ( \
 	(ZONE_NORMAL << 0 * ZONES_SHIFT)				      \
 	| (OPT_ZONE_DMA << ___GFP_DMA * ZONES_SHIFT)			      \
@@ -224,7 +219,5 @@ struct vm_area_struct;
 	| 1 << (___GFP_MOVABLE | ___GFP_DMA32 | ___GFP_HIGHMEM)		      \
 	| 1 << (___GFP_MOVABLE | ___GFP_DMA32 | ___GFP_DMA | ___GFP_HIGHMEM)  \
 )
-
-
 
 #endif /* __LINUX_GFP_H */

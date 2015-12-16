@@ -4,46 +4,46 @@
 #ifndef __ASSEMBLY__
 #define __thread   volatile
 #ifdef __CHECKER__
-# define __user		__attribute__((noderef, address_space(1)))
-# define __kernel	__attribute__((address_space(0)))
-# define __safe		__attribute__((safe))
-# define __force	__attribute__((force))
-# define __nocast	__attribute__((nocast))
-# define __iomem	__attribute__((noderef, address_space(2)))
-# define __must_hold(x)	__attribute__((context(x,1,1)))
-# define __acquires(x)	__attribute__((context(x,0,1)))
-# define __releases(x)	__attribute__((context(x,1,0)))
-# define __acquire(x)	__context__(x,1)
-# define __release(x)	__context__(x,-1)
-# define __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)
-# define __percpu	__attribute__((noderef, address_space(3)))
-# define __pmem		__attribute__((noderef, address_space(5)))
+#define __user		__attribute__((noderef, address_space(1)))
+#define __kernel	__attribute__((address_space(0)))
+#define __safe		__attribute__((safe))
+#define __force	__attribute__((force))
+#define __nocast	__attribute__((nocast))
+#define __iomem	__attribute__((noderef, address_space(2)))
+#define __must_hold(x)	__attribute__((context(x,1,1)))
+#define __acquires(x)	__attribute__((context(x,0,1)))
+#define __releases(x)	__attribute__((context(x,1,0)))
+#define __acquire(x)	__context__(x,1)
+#define __release(x)	__context__(x,-1)
+#define __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)
+#define __percpu	__attribute__((noderef, address_space(3)))
+#define __pmem		__attribute__((noderef, address_space(5)))
 #ifdef CONFIG_SPARSE_RCU_POINTER
-# define __rcu		__attribute__((noderef, address_space(4)))
+#define __rcu		__attribute__((noderef, address_space(4)))
 #else
-# define __rcu
+#define __rcu
 #endif
 extern void __chk_user_ptr(const volatile void __user *);
 extern void __chk_io_ptr(const volatile void __iomem *);
 #else
-# define __user
-# define __kernel
-# define __safe
-# define __force
-# define __nocast
-# define __iomem
-# define __chk_user_ptr(x) (void)0
-# define __chk_io_ptr(x) (void)0
-# define __builtin_warning(x, y...) (1)
-# define __must_hold(x)
-# define __acquires(x)
-# define __releases(x)
-# define __acquire(x) (void)0
-# define __release(x) (void)0
-# define __cond_lock(x,c) (c)
-# define __percpu
-# define __rcu
-# define __pmem
+#define __user
+#define __kernel
+#define __safe
+#define __force
+#define __nocast
+#define __iomem
+#define __chk_user_ptr(x) (void)0
+#define __chk_io_ptr(x) (void)0
+#define __builtin_warning(x, y...) (1)
+#define __must_hold(x)
+#define __acquires(x)
+#define __releases(x)
+#define __acquire(x) (void)0
+#define __release(x) (void)0
+#define __cond_lock(x,c) (c)
+#define __percpu
+#define __rcu
+#define __pmem
 #endif
 
 /* Indirect macros required for expanded argument pasting, eg. __LINE__. */
@@ -66,7 +66,7 @@ extern void __chk_io_ptr(const volatile void __iomem *);
  * coming from above header files here
  */
 #ifdef __INTEL_COMPILER
-# include <yaos/compiler-intel.h>
+#include <yaos/compiler-intel.h>
 #endif
 
 /* Clang compiler defines __GNUC__. So we will overwrite implementations
@@ -80,20 +80,20 @@ extern void __chk_io_ptr(const volatile void __iomem *);
  */
 
 struct ftrace_branch_data {
-	const char *func;
-	const char *file;
-	unsigned line;
-	union {
-		struct {
-			unsigned long correct;
-			unsigned long incorrect;
-		};
-		struct {
-			unsigned long miss;
-			unsigned long hit;
-		};
-		unsigned long miss_hit[2];
-	};
+    const char *func;
+    const char *file;
+    unsigned line;
+    union {
+        struct {
+            unsigned long correct;
+            unsigned long incorrect;
+        };
+        struct {
+            unsigned long miss;
+            unsigned long hit;
+        };
+        unsigned long miss_hit[2];
+    };
 };
 
 /*
@@ -127,12 +127,12 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
  * value is always the same.  This idea is taken from a similar patch
  * written by Daniel Walker.
  */
-# ifndef likely
-#  define likely(x)	(__builtin_constant_p(x) ? !!(x) : __branch_check__(x, 1))
-# endif
-# ifndef unlikely
-#  define unlikely(x)	(__builtin_constant_p(x) ? !!(x) : __branch_check__(x, 0))
-# endif
+#ifndef likely
+#define likely(x)	(__builtin_constant_p(x) ? !!(x) : __branch_check__(x, 1))
+#endif
+#ifndef unlikely
+#define unlikely(x)	(__builtin_constant_p(x) ? !!(x) : __branch_check__(x, 0))
+#endif
 
 #ifdef CONFIG_PROFILE_ALL_BRANCHES
 /*
@@ -159,26 +159,26 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
 #endif /* CONFIG_PROFILE_ALL_BRANCHES */
 
 #else
-# define likely(x)	__builtin_expect(!!(x), 1)
-# define unlikely(x)	__builtin_expect(!!(x), 0)
+#define likely(x)	__builtin_expect(!!(x), 1)
+#define unlikely(x)	__builtin_expect(!!(x), 0)
 #endif
 
 /* Optimization barrier */
 #ifndef barrier
-# define barrier() __memory_barrier()
+#define barrier() __memory_barrier()
 #endif
 
 #ifndef barrier_data
-# define barrier_data(ptr) barrier()
+#define barrier_data(ptr) barrier()
 #endif
 
 /* Unreachable code */
 #ifndef unreachable
-# define unreachable() do { } while (1)
+#define unreachable() do { } while (1)
 #endif
 
 #ifndef RELOC_HIDE
-# define RELOC_HIDE(ptr, off)					\
+#define RELOC_HIDE(ptr, off)					\
   ({ unsigned long __ptr;					\
      __ptr = (unsigned long) (ptr);				\
     (typeof(ptr)) (__ptr + (off)); })
@@ -190,36 +190,53 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
 
 /* Not-quite-unique ID. */
 #ifndef __UNIQUE_ID
-# define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
+#define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
 #endif
 
-
-static __always_inline void __read_once_size(const volatile void *p, void *res, int size)
+static __always_inline void __read_once_size(const volatile void *p, void *res,
+	     int size)
 {
-	switch (size) {
-	case 1: *(u8 *)res = *(volatile u8 *)p; break;
-	case 2: *(u16 *)res = *(volatile u16 *)p; break;
-	case 4: *(u32 *)res = *(volatile u32 *)p; break;
-	case 8: *(u64 *)res = *(volatile u64 *)p; break;
-	default:
-		barrier();
-		__builtin_memcpy((void *)res, (const void *)p, size);
-		barrier();
-	}
+    switch (size) {
+    case 1:
+        *(u8 *) res = *(volatile u8 *)p;
+        break;
+    case 2:
+        *(u16 *) res = *(volatile u16 *)p;
+        break;
+    case 4:
+        *(u32 *) res = *(volatile u32 *)p;
+        break;
+    case 8:
+        *(u64 *) res = *(volatile u64 *)p;
+        break;
+    default:
+        barrier();
+        __builtin_memcpy((void *)res, (const void *)p, size);
+        barrier();
+    }
 }
 
-static __always_inline void __write_once_size(volatile void *p, void *res, int size)
+static __always_inline void __write_once_size(volatile void *p, void *res,
+	      int size)
 {
-	switch (size) {
-	case 1: *(volatile u8 *)p = *(u8 *)res; break;
-	case 2: *(volatile u16 *)p = *(u16 *)res; break;
-	case 4: *(volatile u32 *)p = *(u32 *)res; break;
-	case 8: *(volatile u64 *)p = *(u64 *)res; break;
-	default:
-		barrier();
-		__builtin_memcpy((void *)p, (const void *)res, size);
-		barrier();
-	}
+    switch (size) {
+    case 1:
+        *(volatile u8 *)p = *(u8 *) res;
+        break;
+    case 2:
+        *(volatile u16 *)p = *(u16 *) res;
+        break;
+    case 4:
+        *(volatile u32 *)p = *(u32 *) res;
+        break;
+    case 8:
+        *(volatile u64 *)p = *(u64 *) res;
+        break;
+    default:
+        barrier();
+        __builtin_memcpy((void *)p, (const void *)res, size);
+        barrier();
+    }
 }
 
 /*
@@ -278,7 +295,7 @@ static __always_inline void __write_once_size(volatile void *p, void *res, int s
  * 		int __deprecated foo(void)
  */
 #ifndef __deprecated
-# define __deprecated		/* unimplemented */
+#define __deprecated            /* unimplemented */
 #endif
 
 #ifdef MODULE
@@ -321,15 +338,15 @@ static __always_inline void __write_once_size(volatile void *p, void *res, int s
  * the code is emitted even though it appears to be unreferenced.
  */
 #ifndef __used
-# define __used			/* unimplemented */
+#define __used                  /* unimplemented */
 #endif
 
 #ifndef __maybe_unused
-# define __maybe_unused		/* unimplemented */
+#define __maybe_unused          /* unimplemented */
 #endif
 
 #ifndef __always_unused
-# define __always_unused	/* unimplemented */
+#define __always_unused         /* unimplemented */
 #endif
 
 #ifndef noinline
@@ -363,7 +380,7 @@ static __always_inline void __write_once_size(volatile void *p, void *res, int s
  * `void'.
  */
 #ifndef __attribute_const__
-# define __attribute_const__	/* unimplemented */
+#define __attribute_const__     /* unimplemented */
 #endif
 
 /*
@@ -377,7 +394,7 @@ static __always_inline void __write_once_size(volatile void *p, void *res, int s
 
 /* Simple shorthand for a section definition */
 #ifndef __section
-# define __section(S) __attribute__ ((__section__(#S)))
+#define __section(S) __attribute__ ((__section__(#S)))
 #endif
 
 #ifndef __visible
@@ -386,36 +403,36 @@ static __always_inline void __write_once_size(volatile void *p, void *res, int s
 
 /* Are two types/vars the same type (ignoring qualifiers)? */
 #ifndef __same_type
-# define __same_type(a, b) __builtin_types_compatible_p(typeof(a), typeof(b))
+#define __same_type(a, b) __builtin_types_compatible_p(typeof(a), typeof(b))
 #endif
 
 /* Is this type a native word size -- useful for atomic operations */
 #ifndef __native_word
-# define __native_word(t) (sizeof(t) == sizeof(char) || sizeof(t) == sizeof(short) || sizeof(t) == sizeof(int) || sizeof(t) == sizeof(long))
+#define __native_word(t) (sizeof(t) == sizeof(char) || sizeof(t) == sizeof(short) || sizeof(t) == sizeof(int) || sizeof(t) == sizeof(long))
 #endif
 
 /* Compile time object size, -1 for unknown */
 #ifndef __compiletime_object_size
-# define __compiletime_object_size(obj) -1
+#define __compiletime_object_size(obj) -1
 #endif
 #ifndef __compiletime_warning
-# define __compiletime_warning(message)
+#define __compiletime_warning(message)
 #endif
 #ifndef __compiletime_error
-# define __compiletime_error(message)
+#define __compiletime_error(message)
 /*
  * Sparse complains of variable sized arrays due to the temporary variable in
  * __compiletime_assert. Unfortunately we can't just expand it out to make
  * sparse see a constant array size without breaking compiletime_assert on old
  * versions of GCC (e.g. 4.2.4), so hide the array from sparse altogether.
  */
-# ifndef __CHECKER__
-#  define __compiletime_error_fallback(condition) \
+#ifndef __CHECKER__
+#define __compiletime_error_fallback(condition) \
 	do { ((void)sizeof(char[1 - 2 * condition])); } while (0)
-# endif
+#endif
 #endif
 #ifndef __compiletime_error_fallback
-# define __compiletime_error_fallback(condition) do { } while (0)
+#define __compiletime_error_fallback(condition) do { } while (0)
 #endif
 
 #define __compiletime_assert(condition, msg, prefix, suffix)		\
@@ -488,10 +505,10 @@ static __always_inline void __write_once_size(volatile void *p, void *res, int s
 
 /* Ignore/forbid kprobes attach on very low level functions marked by this attribute: */
 #ifdef CONFIG_KPROBES
-# define __kprobes	__attribute__((__section__(".kprobes.text")))
-# define nokprobe_inline	__always_inline
+#define __kprobes	__attribute__((__section__(".kprobes.text")))
+#define nokprobe_inline	__always_inline
 #else
-# define __kprobes
-# define nokprobe_inline	inline
+#define __kprobes
+#define nokprobe_inline	inline
 #endif
 #endif /* _YAOS__COMPILER_H */

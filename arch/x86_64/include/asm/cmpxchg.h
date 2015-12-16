@@ -2,9 +2,7 @@
 #define ASM_X86_CMPXCHG_H
 
 #include <yaos/compiler.h>
-#include <asm/alternative.h> /* Provides LOCK_PREFIX */
-
-
+#include <asm/alternative.h>    /* Provides LOCK_PREFIX */
 
 /*
  * Constants for operation sizes. On 32-bit, the 64-bit size it set to
@@ -18,14 +16,13 @@
 #define __X86_CASE_L	4
 #define __X86_CASE_Q	8
 extern void __xchg_wrong_size(void)
-        __compiletime_error("Bad argument size for xchg");
+__compiletime_error("Bad argument size for xchg");
 extern void __cmpxchg_wrong_size(void)
-        __compiletime_error("Bad argument size for cmpxchg");
+__compiletime_error("Bad argument size for cmpxchg");
 extern void __xadd_wrong_size(void)
-        __compiletime_error("Bad argument size for xadd");
+__compiletime_error("Bad argument size for xadd");
 extern void __add_wrong_size(void)
-        __compiletime_error("Bad argument size for add");
-
+__compiletime_error("Bad argument size for add");
 
 /* 
  * An exchange-type operation, which takes a value and a pointer, and
@@ -131,9 +128,9 @@ extern void __add_wrong_size(void)
 #define __cmpxchg_local(ptr, old, new, size)				\
 	__raw_cmpxchg((ptr), (old), (new), (size), "")
 
-static inline void set_64bit(volatile u64 *ptr, u64 val)
+static inline void set_64bit(volatile u64 * ptr, u64 val)
 {
-        *ptr = val;
+    *ptr = val;
 }
 
 #define cmpxchg64(ptr, o, n)                                            \
@@ -235,4 +232,4 @@ static inline void set_64bit(volatile u64 *ptr, u64 val)
 #define cmpxchg_double_local(p1, p2, o1, o2, n1, n2) \
 	__cmpxchg_double(, p1, p2, o1, o2, n1, n2)
 
-#endif	/* ASM_X86_CMPXCHG_H */
+#endif /* ASM_X86_CMPXCHG_H */

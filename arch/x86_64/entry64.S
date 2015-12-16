@@ -152,10 +152,12 @@ entry64high:
 # check to see if we're booting a secondary core
   test %ebx, %ebx
   jnz entry64mp
-  movq    $the_cpu+4208, %rax
+#  movq    $the_cpu+4208, %rax
+  lea init_stack_top, %rsp
+
 #  movq $0x2100000,%rax
 
-  mov %rax,%rsp
+#  mov %rax,%rsp
 # setup initial stack
 #  mov $0xFFFFFFFF80010000, %rax
 #  mov %rax, %rsp
@@ -281,3 +283,10 @@ irq_switch:
   mov %rsp,(%rsi)
   mov %rdi,%rsp
   retq  
+
+.bss
+.align 16
+. = . + 4096
+.global init_stack_top
+init_stack_top = .
+

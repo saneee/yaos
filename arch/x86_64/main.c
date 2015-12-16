@@ -10,8 +10,9 @@
 #include <asm/irq.h>
 extern void uart_early_init();
 extern void bzero(void *s, size_t n);
-void start_kernel();//kernel/main.c
-void start_kernel_ap();//kernel/main.c
+void start_kernel();            //kernel/main.c
+void start_kernel_ap();         //kernel/main.c
+
 //extern void mi_startup(void);
 //extern void virtio_setup_intr(void);
 void init_bootload(u32 addr, u32 magic);
@@ -60,19 +61,29 @@ void bp_main(u32 info_addr, u32 magic)
     extern void probe_apic();
     extern void init_pci();
     extern void bootup_cpu_bp();
+
     init_yaos();
     uart_early_init();
     init_cpuid();
+    uchar *p = (uchar *) alternative_instructions;
+
+    printk("alternative_instructions:%p,%lx\n", alternative_instructions,
+           *(ulong *) alternative_instructions);
+    printf("%x %x %x %x %x %x %x %x %x %x %x %x\n", p[0], p[1], p[2], p[3],
+           p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11]);
     alternative_instructions();
     init_kheap();               //set up kheap manager
     init_bss();                 //free 64k heap first
-    printk("rsp:%lx,%lx\n", read_rsp(), (ulong) & the_cpu.arch_cpu.stack.init_stack);
+    printk("rsp:%lx\n", read_rsp());
     init_bootload(info_addr, magic);	//setup __max_phy_addr
     printk("rsp:%lx\n", read_rsp());
     init_phy_mem();             //set up phy memory alloc bitsmap before bootload
     init_e820();                //free phy memory,free more kheap
     init_pgtable();
+    printk("__0__");
+
     init_page_map();
+    printk("__1__");
     init_cpu_bp();              //load bp seg
     init_acpi();
     init_lapic();
@@ -82,11 +93,13 @@ void bp_main(u32 info_addr, u32 magic)
     init_pci();
 
     bootup_cpu_bp();
-    start_kernel();//bp start
+    start_kernel();             //bp start
 }
-void arch_setup(void)//call from kernel/main.c
+
+void arch_setup(void)           //call from kernel/main.c
 {
 }
+
 void arch_setup_b(void)
 {
     extern void alternative_instructions(void);
@@ -124,6 +137,10 @@ void arch_setup_b(void)
     //asm volatile ("int $0x81");
     //asm volatile ("int $0x80");
     test_base();
+    asm volatile ("int $0x80");
+    asm volatile ("int3");
+    asm volatile ("int $0x80");
+
     return;
     for (;;)
         sti_hlt();
@@ -155,4 +172,3 @@ void ap_main(void)
     bootup_cpu_ap();
     start_kernel_ap();
 }
-

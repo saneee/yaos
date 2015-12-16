@@ -3,7 +3,9 @@
 
 #include <asm/rmwcc.h>
 #include <yaos/compiler.h>
-#define BITS_PER_LONG 64
+#ifndef BITS_PER_LONG
+#define BITS_PER_LONG (sizeof(long)*8)
+#endif
 #define _BITOPS_LONG_SHIFT 6
 
 #define BIT_64(n)			(U64_C(1) << (n))
@@ -45,18 +47,17 @@
  * Note that @nr may be almost arbitrarily large; this function is not
  * restricted to acting on a single-word quantity.
  */
-static __always_inline void
-set_bit(long nr, volatile unsigned long *addr)
+static __always_inline void set_bit(long nr, volatile unsigned long *addr)
 {
-	if (IS_IMMEDIATE(nr)) {
-		asm volatile(LOCK_PREFIX "orb %1,%0"
-			: CONST_MASK_ADDR(nr, addr)
-			: "iq" ((u8)CONST_MASK(nr))
-			: "memory");
-	} else {
-		asm volatile(LOCK_PREFIX "bts %1,%0"
-			: BITOP_ADDR(addr) : "Ir" (nr) : "memory");
-	}
+    if (IS_IMMEDIATE(nr)) {
+        asm volatile (LOCK_PREFIX "orb %1,%0":CONST_MASK_ADDR(nr, addr)
+                      :"iq"((u8) CONST_MASK(nr))
+                      :"memory");
+    }
+    else {
+        asm volatile (LOCK_PREFIX
+                      "bts %1,%0":BITOP_ADDR(addr):"Ir"(nr):"memory");
+    }
 }
 
 /**
@@ -70,7 +71,7 @@ set_bit(long nr, volatile unsigned long *addr)
  */
 static inline void __set_bit(long nr, volatile unsigned long *addr)
 {
-	asm volatile("bts %1,%0" : ADDR : "Ir" (nr) : "memory");
+    asm volatile ("bts %1,%0":ADDR:"Ir"(nr):"memory");
 }
 
 /**
@@ -83,18 +84,16 @@ static inline void __set_bit(long nr, volatile unsigned long *addr)
  * you should call smp_mb__before_atomic() and/or smp_mb__after_atomic()
  * in order to ensure changes are visible on other processors.
  */
-static __always_inline void
-clear_bit(long nr, volatile unsigned long *addr)
+static __always_inline void clear_bit(long nr, volatile unsigned long *addr)
 {
-	if (IS_IMMEDIATE(nr)) {
-		asm volatile(LOCK_PREFIX "andb %1,%0"
-			: CONST_MASK_ADDR(nr, addr)
-			: "iq" ((u8)~CONST_MASK(nr)));
-	} else {
-		asm volatile(LOCK_PREFIX "btr %1,%0"
-			: BITOP_ADDR(addr)
-			: "Ir" (nr));
-	}
+    if (IS_IMMEDIATE(nr)) {
+        asm volatile (LOCK_PREFIX "andb %1,%0":CONST_MASK_ADDR(nr, addr)
+                      :"iq"((u8) ~ CONST_MASK(nr)));
+    }
+    else {
+        asm volatile (LOCK_PREFIX "btr %1,%0":BITOP_ADDR(addr)
+                      :"Ir"(nr));
+    }
 }
 
 /*
@@ -107,13 +106,13 @@ clear_bit(long nr, volatile unsigned long *addr)
  */
 static inline void clear_bit_unlock(long nr, volatile unsigned long *addr)
 {
-	barrier();
-	clear_bit(nr, addr);
+    barrier();
+    clear_bit(nr, addr);
 }
 
 static inline void __clear_bit(long nr, volatile unsigned long *addr)
 {
-	asm volatile("btr %1,%0" : ADDR : "Ir" (nr));
+    asm volatile ("btr %1,%0":ADDR:"Ir"(nr));
 }
 
 /*
@@ -130,8 +129,8 @@ static inline void __clear_bit(long nr, volatile unsigned long *addr)
  */
 static inline void __clear_bit_unlock(long nr, volatile unsigned long *addr)
 {
-	barrier();
-	__clear_bit(nr, addr);
+    barrier();
+    __clear_bit(nr, addr);
 }
 
 /**
@@ -145,7 +144,7 @@ static inline void __clear_bit_unlock(long nr, volatile unsigned long *addr)
  */
 static inline void __change_bit(long nr, volatile unsigned long *addr)
 {
-	asm volatile("btc %1,%0" : ADDR : "Ir" (nr));
+    asm volatile ("btc %1,%0":ADDR:"Ir"(nr));
 }
 
 /**
@@ -159,15 +158,14 @@ static inline void __change_bit(long nr, volatile unsigned long *addr)
  */
 static inline void change_bit(long nr, volatile unsigned long *addr)
 {
-	if (IS_IMMEDIATE(nr)) {
-		asm volatile(LOCK_PREFIX "xorb %1,%0"
-			: CONST_MASK_ADDR(nr, addr)
-			: "iq" ((u8)CONST_MASK(nr)));
-	} else {
-		asm volatile(LOCK_PREFIX "btc %1,%0"
-			: BITOP_ADDR(addr)
-			: "Ir" (nr));
-	}
+    if (IS_IMMEDIATE(nr)) {
+        asm volatile (LOCK_PREFIX "xorb %1,%0":CONST_MASK_ADDR(nr, addr)
+                      :"iq"((u8) CONST_MASK(nr)));
+    }
+    else {
+        asm volatile (LOCK_PREFIX "btc %1,%0":BITOP_ADDR(addr)
+                      :"Ir"(nr));
+    }
 }
 
 /**
@@ -180,7 +178,7 @@ static inline void change_bit(long nr, volatile unsigned long *addr)
  */
 static inline int test_and_set_bit(long nr, volatile unsigned long *addr)
 {
-	GEN_BINARY_RMWcc(LOCK_PREFIX "bts", *addr, "Ir", nr, "%0", "c");
+    GEN_BINARY_RMWcc(LOCK_PREFIX "bts", *addr, "Ir", nr, "%0", "c");
 }
 
 /**
@@ -193,7 +191,7 @@ static inline int test_and_set_bit(long nr, volatile unsigned long *addr)
 static __always_inline int
 test_and_set_bit_lock(long nr, volatile unsigned long *addr)
 {
-	return test_and_set_bit(nr, addr);
+    return test_and_set_bit(nr, addr);
 }
 
 /**
@@ -207,13 +205,10 @@ test_and_set_bit_lock(long nr, volatile unsigned long *addr)
  */
 static inline int __test_and_set_bit(long nr, volatile unsigned long *addr)
 {
-	int oldbit;
+    int oldbit;
 
-	asm("bts %2,%1\n\t"
-	    "sbb %0,%0"
-	    : "=r" (oldbit), ADDR
-	    : "Ir" (nr));
-	return oldbit;
+  asm("bts %2,%1\n\t" "sbb %0,%0": "=r"(oldbit), ADDR:"Ir"(nr));
+    return oldbit;
 }
 
 /**
@@ -226,7 +221,7 @@ static inline int __test_and_set_bit(long nr, volatile unsigned long *addr)
  */
 static inline int test_and_clear_bit(long nr, volatile unsigned long *addr)
 {
-	GEN_BINARY_RMWcc(LOCK_PREFIX "btr", *addr, "Ir", nr, "%0", "c");
+    GEN_BINARY_RMWcc(LOCK_PREFIX "btr", *addr, "Ir", nr, "%0", "c");
 }
 
 /**
@@ -247,26 +242,22 @@ static inline int test_and_clear_bit(long nr, volatile unsigned long *addr)
  */
 static inline int __test_and_clear_bit(long nr, volatile unsigned long *addr)
 {
-	int oldbit;
+    int oldbit;
 
-	asm volatile("btr %2,%1\n\t"
-		     "sbb %0,%0"
-		     : "=r" (oldbit), ADDR
-		     : "Ir" (nr));
-	return oldbit;
+    asm volatile ("btr %2,%1\n\t" "sbb %0,%0":"=r" (oldbit), ADDR:"Ir"(nr));
+
+    return oldbit;
 }
 
 /* WARNING: non atomic and it can be reordered! */
 static inline int __test_and_change_bit(long nr, volatile unsigned long *addr)
 {
-	int oldbit;
+    int oldbit;
 
-	asm volatile("btc %2,%1\n\t"
-		     "sbb %0,%0"
-		     : "=r" (oldbit), ADDR
-		     : "Ir" (nr) : "memory");
+    asm volatile ("btc %2,%1\n\t"
+                  "sbb %0,%0":"=r" (oldbit), ADDR:"Ir"(nr):"memory");
 
-	return oldbit;
+    return oldbit;
 }
 
 /**
@@ -279,27 +270,25 @@ static inline int __test_and_change_bit(long nr, volatile unsigned long *addr)
  */
 static inline int test_and_change_bit(long nr, volatile unsigned long *addr)
 {
-	GEN_BINARY_RMWcc(LOCK_PREFIX "btc", *addr, "Ir", nr, "%0", "c");
+    GEN_BINARY_RMWcc(LOCK_PREFIX "btc", *addr, "Ir", nr, "%0", "c");
 }
 
-static __always_inline int constant_test_bit(long nr, const volatile unsigned long *addr)
+static __always_inline int constant_test_bit(long nr,
+	     const volatile unsigned long *addr)
 {
-	return ((1UL << (nr & (BITS_PER_LONG-1))) &
-		(addr[nr >> _BITOPS_LONG_SHIFT])) != 0;
+    return ((1UL << (nr & (BITS_PER_LONG - 1))) &
+            (addr[nr >> _BITOPS_LONG_SHIFT])) != 0;
 }
 
 static inline int variable_test_bit(long nr, volatile const unsigned long *addr)
 {
-	int oldbit;
+    int oldbit;
 
-	asm volatile("bt %2,%1\n\t"
-		     "sbb %0,%0"
-		     : "=r" (oldbit)
-		     : "m" (*(unsigned long *)addr), "Ir" (nr));
+    asm volatile ("bt %2,%1\n\t" "sbb %0,%0":"=r" (oldbit)
+                  :"m"(*(unsigned long *)addr), "Ir"(nr));
 
-	return oldbit;
+    return oldbit;
 }
-
 
 #define test_bit(nr, addr)			\
 	(__builtin_constant_p((nr))		\
@@ -314,10 +303,9 @@ static inline int variable_test_bit(long nr, volatile const unsigned long *addr)
  */
 static inline unsigned long __ffs(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
-		: "=r" (word)
-		: "rm" (word));
-	return word;
+  asm("rep; bsf %1,%0":"=r"(word)
+  :    "rm"(word));
+    return word;
 }
 
 /**
@@ -328,10 +316,9 @@ static inline unsigned long __ffs(unsigned long word)
  */
 static inline unsigned long ffz(unsigned long word)
 {
-	asm("rep; bsf %1,%0"
-		: "=r" (word)
-		: "r" (~word));
-	return word;
+  asm("rep; bsf %1,%0":"=r"(word)
+  :    "r"(~word));
+    return word;
 }
 
 /*
@@ -342,11 +329,11 @@ static inline unsigned long ffz(unsigned long word)
  */
 static inline unsigned long __fls(unsigned long word)
 {
-	asm("bsr %1,%0"
-	    : "=r" (word)
-	    : "rm" (word));
-	return word;
+  asm("bsr %1,%0":"=r"(word)
+  :    "rm"(word));
+    return word;
 }
+
 #undef ADDR
 
 /**
@@ -362,21 +349,20 @@ static inline unsigned long __fls(unsigned long word)
  */
 static inline int ffs(int x)
 {
-	int r;
+    int r;
 
-	/*
-	 * AMD64 says BSFL won't clobber the dest reg if x==0; Intel64 says the
-	 * dest reg is undefined if x==0, but their CPU architect says its
-	 * value is written to set it to the same as before, except that the
-	 * top 32 bits will be cleared.
-	 *
-	 * We cannot do this on 32 bits because at the very least some
-	 * 486 CPUs did not behave this way.
-	 */
-	asm("bsfl %1,%0"
-	    : "=r" (r)
-	    : "rm" (x), "0" (-1));
-	return r + 1;
+    /*
+     * AMD64 says BSFL won't clobber the dest reg if x==0; Intel64 says the
+     * dest reg is undefined if x==0, but their CPU architect says its
+     * value is written to set it to the same as before, except that the
+     * top 32 bits will be cleared.
+     *
+     * We cannot do this on 32 bits because at the very least some
+     * 486 CPUs did not behave this way.
+     */
+  asm("bsfl %1,%0":"=r"(r)
+  :    "rm"(x), "0"(-1));
+    return r + 1;
 }
 
 /**
@@ -392,21 +378,20 @@ static inline int ffs(int x)
  */
 static inline int fls(int x)
 {
-	int r;
+    int r;
 
-	/*
-	 * AMD64 says BSRL won't clobber the dest reg if x==0; Intel64 says the
-	 * dest reg is undefined if x==0, but their CPU architect says its
-	 * value is written to set it to the same as before, except that the
-	 * top 32 bits will be cleared.
-	 *
-	 * We cannot do this on 32 bits because at the very least some
-	 * 486 CPUs did not behave this way.
-	 */
-	asm("bsrl %1,%0"
-	    : "=r" (r)
-	    : "rm" (x), "0" (-1));
-	return r + 1;
+    /*
+     * AMD64 says BSRL won't clobber the dest reg if x==0; Intel64 says the
+     * dest reg is undefined if x==0, but their CPU architect says its
+     * value is written to set it to the same as before, except that the
+     * top 32 bits will be cleared.
+     *
+     * We cannot do this on 32 bits because at the very least some
+     * 486 CPUs did not behave this way.
+     */
+  asm("bsrl %1,%0":"=r"(r)
+  :    "rm"(x), "0"(-1));
+    return r + 1;
 }
 
 /**
@@ -422,17 +407,16 @@ static inline int fls(int x)
  */
 static __always_inline int fls64(__u64 x)
 {
-	int bitpos = -1;
-	/*
-	 * AMD64 says BSRQ won't clobber the dest reg if x==0; Intel64 says the
-	 * dest reg is undefined if x==0, but their CPU architect says its
-	 * value is written to set it to the same as before.
-	 */
-	asm("bsrq %1,%q0"
-	    : "+r" (bitpos)
-	    : "rm" (x));
-	return bitpos + 1;
-}
+    int bitpos = -1;
 
+    /*
+     * AMD64 says BSRQ won't clobber the dest reg if x==0; Intel64 says the
+     * dest reg is undefined if x==0, but their CPU architect says its
+     * value is written to set it to the same as before.
+     */
+  asm("bsrq %1,%q0":"+r"(bitpos)
+  :    "rm"(x));
+    return bitpos + 1;
+}
 
 #endif /* _ASM_X86_BITOPS_H */

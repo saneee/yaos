@@ -11,30 +11,30 @@
    The real information is in arch/x86/Kconfig.cpu, this just converts
    the CONFIGs into a bitmask */
 
-# define NEED_FPU	(1<<(X86_FEATURE_FPU & 31))
+#define NEED_FPU	(1<<(X86_FEATURE_FPU & 31))
 
-# define NEED_PAE	(1<<(X86_FEATURE_PAE & 31))
+#define NEED_PAE	(1<<(X86_FEATURE_PAE & 31))
 
 #ifdef CONFIG_X86_CMPXCHG64
-# define NEED_CX8	(1<<(X86_FEATURE_CX8 & 31))
+#define NEED_CX8	(1<<(X86_FEATURE_CX8 & 31))
 #else
-# define NEED_CX8	0
+#define NEED_CX8	0
 #endif
 
-# define NEED_CMOV	(1<<(X86_FEATURE_CMOV & 31))
+#define NEED_CMOV	(1<<(X86_FEATURE_CMOV & 31))
 
 #ifdef CONFIG_X86_USE_3DNOW
-# define NEED_3DNOW	(1<<(X86_FEATURE_3DNOW & 31))
+#define NEED_3DNOW	(1<<(X86_FEATURE_3DNOW & 31))
 #else
-# define NEED_3DNOW	0
+#define NEED_3DNOW	0
 #endif
 
-# define NEED_NOPL	(1<<(X86_FEATURE_NOPL & 31))
+#define NEED_NOPL	(1<<(X86_FEATURE_NOPL & 31))
 
 #ifdef CONFIG_MATOM
-# define NEED_MOVBE	(1<<(X86_FEATURE_MOVBE & 31))
+#define NEED_MOVBE	(1<<(X86_FEATURE_MOVBE & 31))
 #else
-# define NEED_MOVBE	0
+#define NEED_MOVBE	0
 #endif
 
 #ifdef CONFIG_X86_64
