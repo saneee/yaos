@@ -49,7 +49,7 @@ void wakeup_taskletd(void)
 
     struct task_struct *tsk = this_cpu_ptr(&tasklet_task);
 
-    printk("tasklet_count:%d\n", tasklet_count);
+    //printk("tasklet_count:%d\n", tasklet_count);
     if (tsk->mainthread.flag & THREAD_SUSPEND) {
         wake_up_thread(&tsk->mainthread);
     }

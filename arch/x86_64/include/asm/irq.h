@@ -13,13 +13,13 @@
 #include <asm/cpu_flags.h>
 #include <yaos/cache.h>
 #include <yaos/percpu.h>
-#define TIMER_IRQ	2
+
 #define __ARCH_HAS_DO_SOFTIRQ
 typedef void (*irq_handler_t) (int irq);
 extern irq_handler_t irq_vectors[256];
 static inline irq_handler_t register_irq(int irq, irq_handler_t pnew)
 {
-    int n = irq + T_IRQ0;
+    int n = irq;
     irq_handler_t old = irq_vectors[n];
 
     irq_vectors[n] = pnew;

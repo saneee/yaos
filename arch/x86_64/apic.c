@@ -5,7 +5,6 @@
 #include <asm/bitops.h>
 #include <yaos/printk.h>
 #include <asm/cpu.h>
-#include <asm/apic.h>
 #define CMOS_PORT 0x70
 #if 0
 #define DEBUG_PRINT printk

@@ -38,7 +38,8 @@
  *  into a single vector (CALL_FUNCTION_VECTOR) to save vector space.
  *  TLB, reschedule and local APIC vectors are performance-critical.
  */
-
+#define TIMER_IRQ       2
+#define TIMER_VECTOR    (TIMER_IRQ+T_IRQ0)
 #define SPURIOUS_APIC_VECTOR		0xff
 /*
  * Sanity check

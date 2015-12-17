@@ -11,6 +11,7 @@
 #include <asm/pm64.h>
 #include <yaos/init.h>
 #include <yaos/assert.h>
+#include <yaos/time.h>
 #if 1
 #define DEBUG_PRINT printk
 #else
@@ -23,6 +24,8 @@ extern ulong __max_phy_mem_addr;
 u64 get_pte_with_addr(u64 addr);
 
 ret_t yield_thread(ulong arg);
+atomic_t idlenr = ATOMIC_INIT(0);
+
 static DEFINE_SPINLOCK(kthead_create_lock);
 static LIST_HEAD(kthread_create_list);
 DEFINE_PER_CPU(struct task_struct, idle_task);
@@ -71,10 +74,16 @@ int create_thread_oncpu(struct thread_struct *pthread, int oncpu)
     return 0;
 }
 
-atomic_t idlenr = ATOMIC_INIT(0);
+void test_timeout(u64 nowmsec)
+{
+    set_timeout(10000,test_timeout);
+    DEBUG_PRINT("now msec:%d,cpuid:%d\n",nowmsec,cpuid_apic_id());
+}
+
 static int idle_main(ulong arg)
 {
     atomic_inc(&idlenr);
+set_timeout(1000,test_timeout);
 
     for (;;)
         sti_hlt();
@@ -133,8 +142,7 @@ void wake_up_thread(pthread p)
     cpu_p pcpu = get_current_cpu();
 
     pold = pcpu->current_thread;
-    printk("wake_up thread :%lx,%s,state:%lx,pold:%lx,flag:%lx\n", p, p->name,
-           p->state, pold, p->flag);
+    //printk("wake_up thread :%lx,%s,state:%lx,pold:%lx,flag:%lx\n", p, p->name,    p->state, pold, p->flag);
 
     if (p == pold)
         return;
@@ -182,7 +190,7 @@ void suspend_thread()
     cpu_p pcpu = get_current_cpu();
     pthread pold = pcpu->current_thread;
 
-    printk("suspend:%lx\n", pold);
+    //printk("suspend:%lx\n", pold);
     p = pold->parent;
     ASSERT(p != pold);
     if (unlikely(!p)) {

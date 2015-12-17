@@ -5,6 +5,8 @@
 #include <yaos/init.h>
 #include <asm/apic.h>
 #include <yaos/printk.h>
+#include <asm/apic.h>
+#include <asm/irq.h>
 #if 1
 #define DEBUG_PRINTK printk
 #else
@@ -166,7 +168,14 @@ static __init int init_hpet_call(bool isbp)
 {
     if (isbp)
         init_hpet();
+    else{
+  lapic_write(APIC_SPIV, APIC_SPIV_APIC_ENABLED | SPURIOUS_APIC_VECTOR);
+    lapic_write(APIC_TDCR, APIC_TDR_DIV_1);
+    lapic_write(APIC_LVTT, APIC_LVT_TIMER_PERIODIC | LOCAL_TIMER_VECTOR);
+    lapic_write(APIC_TMICT, 10000000);
 
+
+}
     return 0;
 }
 

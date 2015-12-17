@@ -100,6 +100,14 @@ static void timer_irq_handler(int n)
     run_local_timers();
 
 }
+static void local_timer_irq_handler(int n)
+{
+    void run_local_timers(void);
+
+    ack_lapic_irq();
+    run_local_timers();
+
+}
 
 static void timer_irq_first_handler(int n)
 {
@@ -109,7 +117,9 @@ static void timer_irq_first_handler(int n)
     printk("cmos:%d-%d-%d %d:%d:%d\n", mtime.year, mtime.month, mtime.day,
            mtime.hour, mtime.minute, mtime.second);
 
-    register_irq(TIMER_IRQ, timer_irq_handler);
+    register_irq(TIMER_VECTOR, timer_irq_handler);
+    register_irq(LOCAL_TIMER_VECTOR, local_timer_irq_handler);
+
 }
 
 void __init init_time()
@@ -121,6 +131,6 @@ void __init init_time()
         mktime64(mtime.year, mtime.month, mtime.day, mtime.hour, mtime.minute,
                  mtime.second);
     printk("start_time_in_sec:%ld\n", start_time_in_sec);
-    register_irq(TIMER_IRQ, timer_irq_first_handler);
-
+    register_irq(TIMER_VECTOR, timer_irq_first_handler);
 }
+

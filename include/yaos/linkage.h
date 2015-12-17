@@ -1,5 +1,5 @@
-#ifndef _LINUX_LINKAGE_H
-#define _LINUX_LINKAGE_H
+#ifndef _YAOS_LINKAGE_H
+#define _YAOS_LINKAGE_H
 
 #include <yaos/compiler.h>
 #include <asm/linkage.h>

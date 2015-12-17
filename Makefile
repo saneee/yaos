@@ -54,11 +54,13 @@ MODULEC_OBJECTS = $(patsubst %.c, %.o, $(MODULEC_SOURCES))
 
 LIBS_SOURCES = $(shell find libs -name "*.c")
 LIBS_OBJECTS = $(patsubst %.c, %.o, $(LIBS_SOURCES))
+LIBS_ASMSOURCES = $(shell find libs -name "*.S")
+LIBS_ASMOBJECTS = $(patsubst %.S, %.o, $(LIBS_ASMSOURCES))
 
 
 OBJS := $(addprefix $(ARCHOBJ_DIR)/,$(AOBJS)) \
           $(addprefix $(KOBJ_DIR)/,$(KOBJS)) $(addprefix $(DOBJ_DIR)/,$(DOBJS)) 
-OBJS += $(MODULEC_OBJECTS) $(LIBS_OBJECTS)
+OBJS += $(MODULEC_OBJECTS) $(LIBS_OBJECTS) $(LIBS_ASMOBJECTS)
 # Cross-compiling (e.g., on Mac OS X)
 CROSS_COMPILE ?=
 
@@ -133,6 +135,8 @@ $(DOBJ_DIR)/%.o: drivers/%.S
 
 .c.o:
 	$(CC) $(MODULEC_FLAGS) -c $< -o $@
+.S.o:
+	$(CC) $(ASFLAGS)  -c -o $@ $<
 
 
 
