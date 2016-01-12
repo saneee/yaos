@@ -8,6 +8,7 @@
 #include <yaos/init.h>
 #include <yaos/sched.h>
 #include <yaos/smp.h>
+#include <yaos/time.h>
 void __do_softirq(void);
 extern u64 msec_count;
 struct tasklet_head {
@@ -43,12 +44,10 @@ void irq_exit(void)
         invoke_softirq();
 
 }
-
 void wakeup_taskletd(void)
 {
 
     struct task_struct *tsk = this_cpu_ptr(&tasklet_task);
-
     //printk("tasklet_count:%d\n", tasklet_count);
     if (tsk->mainthread.flag & THREAD_SUSPEND) {
         wake_up_thread(&tsk->mainthread);
@@ -298,6 +297,7 @@ static struct smp_percpu_thread tasklet_threads = {
     .stack_size = TASKLET_STACK_SIZE,
 };
 
+
 int __init softirq_init(bool isbp)
 {
     int cpu;
@@ -306,6 +306,7 @@ int __init softirq_init(bool isbp)
     memset(tsk, 0, sizeof(*tsk));
     if (!isbp)
         return 0;
+
     for_each_possible_cpu(cpu) {
         per_cpu(tasklet_vec, cpu).tail = &per_cpu(tasklet_vec, cpu).head;
         per_cpu(tasklet_hi_vec, cpu).tail = &per_cpu(tasklet_hi_vec, cpu).head;
